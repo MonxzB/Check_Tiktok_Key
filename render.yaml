@@ -3,23 +3,10 @@ services:
   - type: web
     name: yt-longform-server
     runtime: node
-    rootDir: server
-    buildCommand: npm install
-    startCommand: node index.js
+    buildCommand: npm install --prefix server
+    startCommand: node server/index.js
     envVars:
       - key: PORT
         value: 3001
       - key: YT_API_KEY
         sync: false   # Điền thủ công trong Render dashboard → Environment
-
-  # ── Frontend (Static Site) ─────────────────────────────────────
-  - type: web
-    name: yt-longform-client
-    runtime: static
-    rootDir: client
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
