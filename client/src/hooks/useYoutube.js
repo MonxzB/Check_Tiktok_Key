@@ -4,17 +4,24 @@
 import { useState, useCallback } from 'react';
 import { exportRefVideosCSV, exportRefChannelsCSV, downloadBlob } from '../engine/csvUtils.js';
 import { buildMetadata } from '../engine/dataMetadata.js';
+import { recordAnalyzeCall } from '../engine/quotaTracker.js';
 
 export function useYoutube(toast, updateApiData, settings) {
-  const [refVideos, setRefVideos] = useState([]);
-  const [refChannels, setRefChannels] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [refVideos, setRefVideos]         = useState([]);
+  const [refChannels, setRefChannels]     = useState([]);
+  const [loading, setLoading]             = useState(false);
   const [serverConfigured, setServerConfigured] = useState(null);
-  const [lastKeyword, setLastKeyword] = useState('');
+  const [lastKeyword, setLastKeyword]     = useState('');
+  const [usedKeyIndex, setUsedKeyIndex]   = useState(null);
 
   const checkStatus = useCallback(async () => {
+    const userKeys = settings?.apiKeys?.filter(k => k.trim()) ?? [];
     try {
-      const res = await fetch('/api/youtube/status');
+      const res  = await fetch('/api/youtube/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKeys: userKeys }),
+      });
       const data = await res.json();
       setServerConfigured(data.configured);
       return data.configured;
@@ -22,16 +29,12 @@ export function useYoutube(toast, updateApiData, settings) {
       setServerConfigured(false);
       return false;
     }
-  }, []);
+  }, [settings?.apiKeys]);
 
   const analyzeKeyword = useCallback(async (keyword) => {
     if (!keyword) { toast('Vui lòng chọn keyword', 'error'); return; }
 
-    const configured = await checkStatus();
-    if (!configured) {
-      toast('Server chưa cấu hình YT_API_KEY trong .env', 'error');
-      return;
-    }
+    const userKeys = (settings?.apiKeys ?? []).filter(k => k.trim());
 
     setLoading(true);
     setLastKeyword(keyword);
@@ -41,6 +44,7 @@ export function useYoutube(toast, updateApiData, settings) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           keyword,
+          apiKeys: userKeys,
           minDurationMin: settings?.minDurationMin ?? 8,
           timeWindowDays: settings?.timeWindowDays ?? 180,
           maxResults: settings?.maxResults ?? 25,
@@ -56,10 +60,16 @@ export function useYoutube(toast, updateApiData, settings) {
       }
 
       const data = await res.json();
-      const { videos, channels, summary } = data;
+      const { videos, channels, summary, usedKeyIdx } = data;
 
       setRefVideos(videos || []);
       setRefChannels(channels || []);
+      setUsedKeyIndex(usedKeyIdx ?? null);
+
+      // Track quota for the key that was used
+      if (usedKeyIdx != null && userKeys[usedKeyIdx]) {
+        recordAnalyzeCall(userKeys[usedKeyIdx], videos?.length ?? 25, channels?.length ?? 10);
+      }
 
       // Build metadata and update keyword's apiData
       const meta = buildMetadata({
@@ -78,16 +88,17 @@ export function useYoutube(toast, updateApiData, settings) {
       updateApiData(keyword, summary, meta);
 
       const count = videos?.length ?? 0;
+      const keyLabel = usedKeyIdx != null ? ` (Key #${usedKeyIdx + 1})` : '';
       const msg = data.fromCache
         ? `Cache: ${count} video long-form tìm thấy`
-        : `Đã phân tích xong — ${count} video long-form`;
+        : `Đã phân tích xong — ${count} video long-form${keyLabel}`;
       toast(msg, 'success');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [toast, checkStatus, updateApiData, settings]);
+  }, [toast, updateApiData, settings]);
 
   const exportVideosCsv = useCallback(() => {
     if (!refVideos.length) { toast('Chưa có video nào để xuất', 'error'); return; }
@@ -108,7 +119,7 @@ export function useYoutube(toast, updateApiData, settings) {
   }, []);
 
   return {
-    refVideos, refChannels, loading, serverConfigured, lastKeyword,
+    refVideos, refChannels, loading, serverConfigured, lastKeyword, usedKeyIndex,
     analyzeKeyword, exportVideosCsv, exportChannelsCsv, clearResults, checkStatus,
   };
 }

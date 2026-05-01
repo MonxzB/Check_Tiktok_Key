@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react';
 const STORAGE_KEY = 'ytlf_settings';
 
 const DEFAULTS = {
-  minDurationMin: 8,      // minutes
+  minDurationMin: 8,
   timeWindowDays: 180,
   maxResults: 25,
   hideRisky: true,
@@ -14,6 +14,8 @@ const DEFAULTS = {
   regionCode: 'JP',
   languageCode: 'ja',
   orderBy: 'relevance',
+  apiKeys: [],            // User-managed YouTube API keys (array of strings)
+  activeKeyIndex: 0,      // Which key is currently active
 };
 
 function load() {

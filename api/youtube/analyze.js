@@ -16,18 +16,34 @@ function cacheSet(key, data) { cache.set(key, { data, ts: Date.now() }); }
 // ── Helpers ───────────────────────────────────────────────────
 const BASE = 'https://www.googleapis.com/youtube/v3';
 
-async function ytFetch(path, params) {
-  const url = new URL(BASE + path);
-  url.searchParams.set('key', process.env.YT_API_KEY);
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
-  }
-  const res = await fetch(url.toString());
-  if (!res.ok) {
+// Try fetch with key rotation — returns { data, usedKeyIdx }
+async function ytFetchWithRotation(path, params, apiKeys) {
+  const keys = apiKeys.filter(k => k && k.trim());
+  if (keys.length === 0) throw new Error('Không có API key nào được cấu hình');
+
+  let lastError;
+  for (let idx = 0; idx < keys.length; idx++) {
+    const url = new URL(BASE + path);
+    url.searchParams.set('key', keys[idx].trim());
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
+    }
+    const res = await fetch(url.toString());
+    if (res.ok) return { data: await res.json(), usedKeyIdx: idx };
+
     const err = await res.json().catch(() => ({}));
+    const reason = err?.error?.errors?.[0]?.reason ?? '';
+    const isQuotaError = res.status === 429 || res.status === 403 ||
+      reason === 'quotaExceeded' || reason === 'dailyLimitExceeded';
+
+    if (isQuotaError && idx < keys.length - 1) {
+      console.warn(`[Key ${idx + 1}] Quota exceeded, rotating to key ${idx + 2}...`);
+      lastError = new Error(`Key #${idx + 1} hết quota`);
+      continue; // try next key
+    }
     throw new Error(err?.error?.message || `YouTube API error: ${res.status}`);
   }
-  return res.json();
+  throw lastError || new Error('Tất cả API keys đều hết quota');
 }
 
 function parseDuration(str) {
@@ -82,35 +98,45 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (!process.env.YT_API_KEY) return res.status(503).json({ error: 'Server chưa cấu hình YT_API_KEY' });
-
   const {
-    keyword, minDurationMin = 8, timeWindowDays = 180,
+    keyword, apiKeys: userApiKeys, minDurationMin = 8, timeWindowDays = 180,
     maxResults = 25, orderBy = 'relevance', regionCode = 'JP', languageCode = 'ja',
   } = req.body || {};
 
+  // Build keys list: user keys take priority over server key
+  const userKeys = (userApiKeys ?? []).filter(k => typeof k === 'string' && k.trim());
+  const allKeys  = userKeys.length > 0 ? userKeys : (process.env.YT_API_KEY ? [process.env.YT_API_KEY] : []);
+
+  if (allKeys.length === 0) return res.status(503).json({ error: 'Không có API key nào được cấu hình' });
   if (!keyword) return res.status(400).json({ error: 'Cần truyền keyword' });
 
   const minDurationSec = minDurationMin * 60;
-  const cacheKey = `${keyword}|${minDurationMin}|${timeWindowDays}|${orderBy}|${regionCode}`;
+  const cacheKey = `${keyword}|${minDurationMin}|${timeWindowDays}|${orderBy}|${regionCode}|${allKeys[0].slice(-4)}`;
   const cached = cacheGet(cacheKey);
   if (cached) return res.json({ ...cached, fromCache: true });
 
-  try {
+  // Helper that auto-rotates keys
+  let activeKeyIdx = 0;
+  async function yt(path, params) {
+    const { data, usedKeyIdx } = await ytFetchWithRotation(path, params, allKeys.slice(activeKeyIdx));
+    activeKeyIdx += usedKeyIdx; // track which key ended up being used
+    return data;
+  }
+
     const publishedAfter = timeWindowDays < 3650
       ? new Date(Date.now() - timeWindowDays * 86400000).toISOString()
       : undefined;
 
-    const searchData = await ytFetch('/search', {
+    const searchData = await yt('/search', {
       part: 'snippet', q: keyword, type: 'video',
       regionCode, relevanceLanguage: languageCode,
       maxResults, order: orderBy, publishedAfter,
     });
 
     const videoIds = (searchData.items || []).map(i => i.id.videoId).filter(Boolean);
-    if (!videoIds.length) return res.json({ videos: [], channels: [], summary: { longVideosFound: 0 } });
+    if (!videoIds.length) return res.json({ videos: [], channels: [], summary: { longVideosFound: 0 }, usedKeyIdx: activeKeyIdx });
 
-    const videoData = await ytFetch('/videos', { part: 'snippet,contentDetails,statistics', id: videoIds.join(',') });
+    const videoData = await yt('/videos', { part: 'snippet,contentDetails,statistics', id: videoIds.join(',') });
 
     const channelIds = new Set();
     const rawVideos = (videoData.items || []).map(item => {
@@ -135,7 +161,7 @@ export default async function handler(req, res) {
 
     let channelMap = {};
     if (channelIds.size > 0) {
-      const chData = await ytFetch('/channels', { part: 'snippet,statistics', id: [...channelIds].join(',') });
+      const chData = await yt('/channels', { part: 'snippet,statistics', id: [...channelIds].join(',') });
       for (const ch of (chData.items || [])) {
         channelMap[ch.id] = {
           channelId: ch.id, channelTitle: ch.snippet?.title || '',
@@ -199,7 +225,7 @@ export default async function handler(req, res) {
       collectedAt: new Date().toISOString(), timeWindowDays, regionCode, languageCode,
     };
 
-    const result = { videos: refVideos, channels: refChannels, summary };
+    const result = { videos: refVideos, channels: refChannels, summary, usedKeyIdx: activeKeyIdx };
     cacheSet(cacheKey, result);
     res.json(result);
   } catch (err) {
