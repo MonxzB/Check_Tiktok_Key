@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getQuotaInfo } from '../engine/quotaTracker.js';
+import CustomSelect from './CustomSelect.jsx';
 
 export default function SettingsPanel({ settings, onUpdate, onReset }) {
   function f(key, val) { onUpdate({ [key]: val }); }
@@ -36,10 +37,10 @@ export default function SettingsPanel({ settings, onUpdate, onReset }) {
       <section className="card">
         <h2><span className="icon">⚙️</span> Cài đặt</h2>
 
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px,1fr))', gap:24 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px,1fr))', gap:24 }}>
 
           {/* ── YouTube API Keys ── */}
-          <div className="settings-group" style={{ gridColumn: 'span 2' }}>
+          <div className="settings-group settings-group--full">
             <h3>🔑 YouTube API Keys của bạn</h3>
             <p style={{ fontSize:'0.82rem', color:'var(--text-secondary)', marginBottom:10 }}>
               Nhập mỗi API key trên 1 dòng. Khi key 1 hết quota (10,000 units/ngày), hệ thống tự chuyển sang key 2...
@@ -134,41 +135,61 @@ export default function SettingsPanel({ settings, onUpdate, onReset }) {
 
             <div className="filter-group" style={{ marginBottom:12 }}>
               <label>Thời lượng long-form tối thiểu</label>
-              <select value={settings.minDurationMin} onChange={e => f('minDurationMin', +e.target.value)}>
-                <option value={5}>5 phút</option>
-                <option value={8}>8 phút (mặc định)</option>
-                <option value={10}>10 phút</option>
-                <option value={20}>20 phút</option>
-              </select>
+              <CustomSelect
+                value={settings.minDurationMin}
+                onChange={v => f('minDurationMin', v)}
+                options={[
+                  { value:5,  label:'5 phút' },
+                  { value:8,  label:'8 phút (mặc định)' },
+                  { value:10, label:'10 phút' },
+                  { value:20, label:'20 phút' },
+                ]}
+                placeholder="Chọn..."
+              />
             </div>
 
             <div className="filter-group" style={{ marginBottom:12 }}>
               <label>Time window (ngày)</label>
-              <select value={settings.timeWindowDays} onChange={e => f('timeWindowDays', +e.target.value)}>
-                <option value={30}>30 ngày</option>
-                <option value={90}>90 ngày</option>
-                <option value={180}>180 ngày (mặc định)</option>
-                <option value={365}>365 ngày</option>
-                <option value={3650}>Toàn thời gian</option>
-              </select>
+              <CustomSelect
+                value={settings.timeWindowDays}
+                onChange={v => f('timeWindowDays', v)}
+                options={[
+                  { value:30,   label:'30 ngày' },
+                  { value:90,   label:'90 ngày' },
+                  { value:180,  label:'180 ngày (mặc định)' },
+                  { value:365,  label:'365 ngày' },
+                  { value:3650, label:'Toàn thời gian' },
+                ]}
+                placeholder="Chọn..."
+              />
             </div>
 
             <div className="filter-group" style={{ marginBottom:12 }}>
               <label>Max results / keyword</label>
-              <select value={settings.maxResults} onChange={e => f('maxResults', +e.target.value)}>
-                <option value={10}>10</option>
-                <option value={25}>25 (mặc định)</option>
-                <option value={50}>50</option>
-              </select>
+              <CustomSelect
+                value={settings.maxResults}
+                onChange={v => f('maxResults', v)}
+                options={[
+                  { value:10, label:'10' },
+                  { value:25, label:'25 (mặc định)' },
+                  { value:50, label:'50' },
+                ]}
+                placeholder="Chọn..."
+              />
             </div>
 
             <div className="filter-group" style={{ marginBottom:12 }}>
               <label>Thứ tự kết quả</label>
-              <select value={settings.orderBy} onChange={e => f('orderBy', e.target.value)}>
-                <option value="relevance">Relevance (mặc định)</option>
-                <option value="viewCount">View Count</option>
-                <option value="date">Date</option>
-              </select>
+              <CustomSelect
+                value={settings.orderBy}
+                onChange={v => f('orderBy', v)}
+                options={[
+                  { value:'relevance', label:'Relevance (mặc định)' },
+                  { value:'viewCount', label:'View Count' },
+                  { value:'date',      label:'Date' },
+                ]}
+                placeholder="Chọn..."
+              />
             </div>
           </div>
 
@@ -178,29 +199,44 @@ export default function SettingsPanel({ settings, onUpdate, onReset }) {
 
             <div className="filter-group" style={{ marginBottom:12 }}>
               <label>Region Code</label>
-              <select value={settings.regionCode} onChange={e => f('regionCode', e.target.value)}>
-                <option value="JP">JP — Nhật Bản (mặc định)</option>
-                <option value="US">US — Mỹ</option>
-                <option value="VN">VN — Việt Nam</option>
-              </select>
+              <CustomSelect
+                value={settings.regionCode}
+                onChange={v => f('regionCode', v)}
+                options={[
+                  { value:'JP', label:'JP — Nhật Bản (mặc định)' },
+                  { value:'US', label:'US — Mỹ' },
+                  { value:'VN', label:'VN — Việt Nam' },
+                ]}
+                placeholder="Chọn..."
+              />
             </div>
 
             <div className="filter-group" style={{ marginBottom:12 }}>
               <label>Language Code</label>
-              <select value={settings.languageCode} onChange={e => f('languageCode', e.target.value)}>
-                <option value="ja">ja — Tiếng Nhật (mặc định)</option>
-                <option value="en">en — Tiếng Anh</option>
-                <option value="vi">vi — Tiếng Việt</option>
-              </select>
+              <CustomSelect
+                value={settings.languageCode}
+                onChange={v => f('languageCode', v)}
+                options={[
+                  { value:'ja', label:'ja — Tiếng Nhật (mặc định)' },
+                  { value:'en', label:'en — Tiếng Anh' },
+                  { value:'vi', label:'vi — Tiếng Việt' },
+                ]}
+                placeholder="Chọn..."
+              />
             </div>
 
             <div className="filter-group" style={{ marginBottom:12 }}>
               <label>Cache duration (ngày)</label>
-              <select value={settings.cacheDays} onChange={e => f('cacheDays', +e.target.value)}>
-                <option value={1}>1 ngày</option>
-                <option value={7}>7 ngày (mặc định)</option>
-                <option value={30}>30 ngày</option>
-              </select>
+              <CustomSelect
+                value={settings.cacheDays}
+                onChange={v => f('cacheDays', v)}
+                options={[
+                  { value:1,  label:'1 ngày' },
+                  { value:7,  label:'7 ngày (mặc định)' },
+                  { value:30, label:'30 ngày' },
+                ]}
+                placeholder="Chọn..."
+              />
             </div>
 
             <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:'0.85rem', color:'var(--text-secondary)', marginTop:12 }}>

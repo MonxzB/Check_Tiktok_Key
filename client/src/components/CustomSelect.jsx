@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
  * Props:
  *   value, onChange, options: [{ value, label }], placeholder
  */
-export default function CustomSelect({ value, onChange, options = [], placeholder = '-- Chọn --', style = {} }) {
+export default function CustomSelect({ value, onChange, options = [], placeholder = '-- Chọn --', style = {}, fullWidth = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -21,7 +21,7 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
   const selected = options.find(o => o.value === value);
 
   return (
-    <div ref={ref} style={{ position: 'relative', minWidth: 220, ...style }}>
+    <div ref={ref} style={{ position: 'relative', width: '100%', ...style }}>
       {/* Trigger */}
       <button
         type="button"

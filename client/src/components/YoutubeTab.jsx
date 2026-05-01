@@ -47,20 +47,19 @@ export default function YoutubeTab({
       <section className="card">
         <h2><span className="icon">▶️</span> Phân tích YouTube Long-Form</h2>
 
-        <div className="filter-bar" style={{ marginBottom: 12 }}>
-          <div className="filter-group" style={{ flex:1, maxWidth:440 }}>
+        <div className="yt-analyze-bar" style={{ display:'flex', flexWrap:'wrap', gap:12, alignItems:'flex-end', marginBottom: 12 }}>
+          <div className="filter-group" style={{ flex:'1 1 220px', minWidth:0 }}>
             <label>Chọn Keyword để phân tích</label>
             <CustomSelect
               value={selectedKeyword}
               onChange={setSelectedKeyword}
               options={kwOptions}
               placeholder="-- Chọn keyword --"
-              style={{ width:'100%', maxWidth:440 }}
             />
           </div>
 
           <button
-            className="btn btn-primary" style={{ alignSelf:'flex-end' }}
+            className="btn btn-primary" style={{ alignSelf:'flex-end', whiteSpace:'nowrap' }}
             onClick={handleAnalyzeClick}
             disabled={loading || !selectedKeyword}
           >
@@ -70,7 +69,7 @@ export default function YoutubeTab({
           </button>
 
           {!loading && selectedKeyword && hasKeys && (
-            <span style={{ alignSelf:'flex-end', fontSize:'0.75rem', color:'var(--text-muted)' }}>
+            <span style={{ alignSelf:'flex-end', fontSize:'0.75rem', color:'var(--text-muted)', whiteSpace:'nowrap' }}>
               ~{estimatedCalls} API calls
             </span>
           )}
