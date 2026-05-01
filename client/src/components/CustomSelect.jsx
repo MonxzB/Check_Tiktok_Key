@@ -18,7 +18,8 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const selected = options.find(o => o.value === value);
+  // Match by value; empty string means "all/reset" — still show the option's label
+  const selected = options.find(o => String(o.value) === String(value));
 
   return (
     <div ref={ref} style={{ position: 'relative', width: '100%', ...style }}>
@@ -31,7 +32,7 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
           background: 'var(--glass)',
           border: `1px solid ${open ? 'var(--accent)' : 'var(--glass-border)'}`,
           borderRadius: 'var(--radius-sm)',
-          color: selected ? 'var(--text)' : 'var(--text-muted)',
+          color: (selected && selected.value !== '') ? 'var(--text)' : 'var(--text-muted)',
           padding: '8px 36px 8px 12px',
           fontSize: '0.85rem',
           fontFamily: "'Noto Sans JP','Inter',sans-serif",
@@ -58,54 +59,43 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
           top: 'calc(100% + 6px)',
           left: 0,
           right: 0,
-          zIndex: 999,
+          zIndex: 9999,
           background: 'var(--bg-secondary)',
-          border: '1px solid var(--glass-border)',
+          border: '1px solid var(--accent)',
           borderRadius: 'var(--radius-sm)',
-          boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
-          maxHeight: 320,
+          boxShadow: '0 16px 48px rgba(0,0,0,0.7)',
+          maxHeight: 280,
           overflowY: 'auto',
           backdropFilter: 'blur(12px)',
         }}>
-          {/* Placeholder option */}
-          <div
-            onClick={() => { onChange(''); setOpen(false); }}
-            style={{
-              padding: '9px 14px',
-              fontSize: '0.82rem',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              borderBottom: '1px solid var(--glass-border)',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--glass)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            {placeholder}
-          </div>
-
-          {options.map(opt => (
-            <div
-              key={opt.value}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              style={{
-                padding: '9px 14px',
-                fontSize: '0.82rem',
-                fontFamily: "'Noto Sans JP','Inter',sans-serif",
-                color: opt.value === value ? 'var(--accent)' : 'var(--text)',
-                cursor: 'pointer',
-                background: opt.value === value ? 'var(--accent-glow)' : 'transparent',
-                transition: 'background 0.15s',
-                borderBottom: '1px solid rgba(255,255,255,0.03)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-              onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.background = 'var(--glass)'; }}
-              onMouseLeave={e => { if (opt.value !== value) e.currentTarget.style.background = 'transparent'; }}
-            >
-              {opt.label}
-            </div>
-          ))}
+          {options.map((opt, i) => {
+            const isSelected = opt.value === value || (opt.value === '' && !value);
+            const isReset = opt.value === '';
+            return (
+              <div
+                key={String(opt.value) + i}
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                style={{
+                  padding: '9px 14px',
+                  fontSize: '0.82rem',
+                  fontFamily: "'Noto Sans JP','Inter',sans-serif",
+                  color: isSelected ? 'var(--accent)' : isReset ? 'var(--text-muted)' : 'var(--text)',
+                  cursor: 'pointer',
+                  background: isSelected ? 'var(--accent-glow)' : 'transparent',
+                  transition: 'background 0.15s',
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  fontWeight: isSelected ? 600 : 400,
+                }}
+                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+              >
+                {opt.label}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
