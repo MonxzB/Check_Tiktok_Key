@@ -2,10 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { formatNum } from './utils.js';
 
 export default function RefVideoTable({ videos, keyword }) {
-  const [sortCol, setSortCol] = useState('longFormFitScore');
-  const [sortDir, setSortDir] = useState('desc');
+  const [sortCol, setSortCol]     = useState('longFormFitScore');
+  const [sortDir, setSortDir]     = useState('desc');
   const [hideRisky, setHideRisky] = useState(true);
   const [minDuration, setMinDuration] = useState(0);
+  const [minViews, setMinViews]   = useState(0);
+  const [minScore, setMinScore]   = useState(0);
+  const [search, setSearch]       = useState('');
 
   function handleSort(col) {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -14,8 +17,14 @@ export default function RefVideoTable({ videos, keyword }) {
 
   const sorted = useMemo(() => {
     let f = [...videos];
-    if (hideRisky) f = f.filter(v => !v.isRisky);
+    if (hideRisky)    f = f.filter(v => !v.isRisky);
     if (minDuration > 0) f = f.filter(v => v.durationSec >= minDuration * 60);
+    if (minViews > 0) f = f.filter(v => v.viewCount >= minViews);
+    if (minScore > 0) f = f.filter(v => v.longFormFitScore >= minScore);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      f = f.filter(v => v.title?.toLowerCase().includes(q) || v.channelTitle?.toLowerCase().includes(q));
+    }
     f.sort((a, b) => {
       let va = a[sortCol] ?? 0, vb = b[sortCol] ?? 0;
       if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
@@ -24,11 +33,13 @@ export default function RefVideoTable({ videos, keyword }) {
       return 0;
     });
     return f;
-  }, [videos, hideRisky, minDuration, sortCol, sortDir]);
+  }, [videos, hideRisky, minDuration, minViews, minScore, search, sortCol, sortDir]);
+
+  const activeFilters = [hideRisky, minDuration > 0, minViews > 0, minScore > 0, search.trim()].filter(Boolean).length;
 
   if (!videos.length) return (
     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-      Chưa có video. Bấm "Phân tích bằng YouTube API" để tìm video long-form tham khảo.
+      Chưa có video. Bấm "🔍 Phân tích" để tìm video long-form tham khảo.
     </div>
   );
 
@@ -46,25 +57,78 @@ export default function RefVideoTable({ videos, keyword }) {
 
   return (
     <div>
-      <div className="filter-bar" style={{ marginBottom: 12, padding: '10px 0' }}>
-        <label style={{ display:'flex', alignItems:'center', gap: 6, fontSize: '0.85rem', color: 'var(--text-secondary)', cursor:'pointer' }}>
-          <input type="checkbox" checked={hideRisky} onChange={e => setHideRisky(e.target.checked)} />
-          Ẩn video rủi ro bản quyền
-        </label>
-        <div className="filter-group">
-          <label>Thời lượng tối thiểu (phút)</label>
-          <select value={minDuration} onChange={e => setMinDuration(+e.target.value)}>
-            <option value={0}>Tất cả</option>
-            <option value={5}>5 phút</option>
-            <option value={8}>8 phút</option>
-            <option value={10}>10 phút</option>
-            <option value={20}>20 phút</option>
-          </select>
+      {/* ── Filter bar ── */}
+      <div style={{ background:'var(--bg-secondary)', borderRadius:8, padding:'12px 14px', marginBottom:12, border:'1px solid var(--glass-border)' }}>
+        <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
+
+          {/* Search */}
+          <div className="filter-group" style={{ flex:'1 1 200px', minWidth:160 }}>
+            <label>🔍 Tìm tiêu đề / kênh</label>
+            <input
+              type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Nhập từ khoá..."
+              style={{ background:'rgba(255,255,255,0.05)', border:'1px solid var(--glass-border)', borderRadius:6, color:'var(--text)', padding:'6px 10px', fontSize:'0.83rem', width:'100%' }}
+            />
+          </div>
+
+          {/* Min duration */}
+          <div className="filter-group" style={{ minWidth:140 }}>
+            <label>⏱ Thời lượng tối thiểu</label>
+            <select value={minDuration} onChange={e => setMinDuration(+e.target.value)}>
+              <option value={0}>Tất cả</option>
+              <option value={5}>5 phút+</option>
+              <option value={8}>8 phút+</option>
+              <option value={10}>10 phút+</option>
+              <option value={20}>20 phút+</option>
+              <option value={30}>30 phút+</option>
+            </select>
+          </div>
+
+          {/* Min views */}
+          <div className="filter-group" style={{ minWidth:130 }}>
+            <label>👁 Views tối thiểu</label>
+            <select value={minViews} onChange={e => setMinViews(+e.target.value)}>
+              <option value={0}>Tất cả</option>
+              <option value={1000}>1K+</option>
+              <option value={5000}>5K+</option>
+              <option value={10000}>10K+</option>
+              <option value={50000}>50K+</option>
+              <option value={100000}>100K+</option>
+            </select>
+          </div>
+
+          {/* Min fit score */}
+          <div className="filter-group" style={{ minWidth:130 }}>
+            <label>⭐ Fit Score tối thiểu</label>
+            <select value={minScore} onChange={e => setMinScore(+e.target.value)}>
+              <option value={0}>Tất cả</option>
+              <option value={50}>50+ (Tốt)</option>
+              <option value={70}>70+ (Rất tốt)</option>
+              <option value={85}>85+ (Xuất sắc)</option>
+            </select>
+          </div>
+
+          {/* Hide risky */}
+          <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:'0.83rem', color:'var(--text-secondary)', cursor:'pointer', alignSelf:'flex-end', paddingBottom:4 }}>
+            <input type="checkbox" checked={hideRisky} onChange={e => setHideRisky(e.target.checked)} />
+            Ẩn rủi ro
+          </label>
+
+          {/* Reset */}
+          {activeFilters > 0 && (
+            <button className="btn btn-secondary" style={{ padding:'5px 12px', fontSize:'0.78rem', alignSelf:'flex-end' }}
+              onClick={() => { setMinDuration(0); setMinViews(0); setMinScore(0); setSearch(''); setHideRisky(true); }}>
+              ✕ Reset ({activeFilters})
+            </button>
+          )}
+
+          <span style={{ marginLeft:'auto', fontSize:'0.8rem', color:'var(--text-muted)', alignSelf:'flex-end', paddingBottom:4 }}>
+            {sorted.length} / {videos.length} video
+          </span>
         </div>
-        <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          {sorted.length} video long-form tham khảo
-        </span>
       </div>
+
+      {/* ── Table ── */}
       <div className="table-wrapper">
         <table>
           <thead>

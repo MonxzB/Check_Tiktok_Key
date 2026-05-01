@@ -25,6 +25,7 @@ const COLS = [
   { key: 'smallOpp',       label: 'Kênh nhỏ cơ hội',yt: true },
   { key: 'freshness',      label: 'Freshness',       yt: true },
   { key: 'confidence',     label: 'Confidence',      yt: true },
+  { key: 'collectedAt',    label: 'Cập nhật lúc',    yt: true },
   { key: 'reason',         label: 'Lý do',           fixed: false },
 ];
 
@@ -87,6 +88,13 @@ export default function KeywordTable({ keywords, filters, onSelectKeyword, onAna
         return <td key={col.key} style={{ color: getFreshnessColor(fr), fontSize: '0.72rem' }}>{fr}</td>;
       }
       case 'confidence':     return <td key={col.key} style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{meta.confidenceLevel || '—'}</td>;
+      case 'collectedAt': {
+        const ts = meta.collectedAt || api.collectedAt;
+        if (!ts) return <td key={col.key} style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>—</td>;
+        const d = new Date(ts);
+        const label = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        return <td key={col.key} style={{ fontSize:'0.72rem', color:'var(--text-muted)', whiteSpace:'nowrap' }} title={d.toLocaleString('vi-VN')}>{label}</td>;
+      }
       case 'reason':         return <td key={col.key} style={{ maxWidth: 200, fontSize: '0.75rem', color: 'var(--text-secondary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{kw.reason}</td>;
       default:               return <td key={col.key}>{kw[col.key] ?? '—'}</td>;
     }
