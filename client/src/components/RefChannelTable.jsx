@@ -147,7 +147,7 @@ export default function RefChannelTable({ channels }) {
           {/* Channel size breakdown */}
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             <span style={{ fontSize:'0.75rem', background:'rgba(255,23,68,0.1)', color:'var(--red)', padding:'2px 8px', borderRadius:10 }}>
-              🏆 Lớn (> 500K): {comp.big}
+              🏆 Lớn (&gt; 500K): {comp.big}
             </span>
             <span style={{ fontSize:'0.75rem', background:'rgba(255,145,0,0.1)', color:'var(--orange)', padding:'2px 8px', borderRadius:10 }}>
               📈 Vừa: {comp.medium}
