@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import RefVideoTable from './RefVideoTable.jsx';
 import RefChannelTable from './RefChannelTable.jsx';
 import CustomSelect from './CustomSelect.jsx';
+import ApiKeyModal from './ApiKeyModal.jsx';
 
 export default function YoutubeTab({
   keywords, refVideos, refChannels, loading, serverConfigured,
-  lastKeyword, onAnalyze, onExportVideos, onExportChannels, settings,
+  lastKeyword, onAnalyze, onExportVideos, onExportChannels, settings, onSaveKeys,
 }) {
   const [selectedKeyword, setSelectedKeyword] = useState('');
   const [activeSubTab, setActiveSubTab] = useState('videos');
+  const [showKeyModal, setShowKeyModal] = useState(false);
 
   const topKeywords = [...keywords]
     .filter(k => k.longFormScore >= 40)
@@ -20,21 +22,30 @@ export default function YoutubeTab({
     label: `${k.keyword} (${k.longFormScore}đ)`,
   }));
 
-  const estimatedCalls = Math.ceil((settings?.maxResults ?? 25) / 50) * 3 + 1; // search + videos + channels
+  const hasKeys = (settings?.apiKeys ?? []).filter(k => k.trim()).length > 0;
+  const estimatedCalls = Math.ceil((settings?.maxResults ?? 25) / 50) * 3 + 1;
+
+  function handleAnalyzeClick() {
+    if (!selectedKeyword) return;
+    if (!hasKeys) {
+      // No API key configured → show popup
+      setShowKeyModal(true);
+      return;
+    }
+    onAnalyze(selectedKeyword);
+  }
+
+  function handleModalSave(keys) {
+    onSaveKeys(keys);          // save to settings
+    setShowKeyModal(false);
+    // small delay to let settings update propagate
+    setTimeout(() => onAnalyze(selectedKeyword), 100);
+  }
 
   return (
     <div>
       <section className="card">
         <h2><span className="icon">▶️</span> Phân tích YouTube Long-Form</h2>
-
-        {serverConfigured === false && (
-          <div style={{
-            background:'rgba(255,100,0,0.12)', border:'1px solid rgba(255,100,0,0.3)',
-            borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:'0.85rem', color:'var(--orange)',
-          }}>
-            ⚠️ Server chưa cấu hình <code>YT_API_KEY</code>. Tạo file <code>server/.env</code> với <code>YT_API_KEY=...</code> rồi restart server.
-          </div>
-        )}
 
         <div className="filter-bar" style={{ marginBottom: 12 }}>
           <div className="filter-group" style={{ flex:1, maxWidth:440 }}>
@@ -47,21 +58,34 @@ export default function YoutubeTab({
               style={{ width:'100%', maxWidth:440 }}
             />
           </div>
+
           <button
             className="btn btn-primary" style={{ alignSelf:'flex-end' }}
-            onClick={() => onAnalyze(selectedKeyword)}
+            onClick={handleAnalyzeClick}
             disabled={loading || !selectedKeyword}
           >
             {loading
               ? <><span className="spinner" /> Đang phân tích...</>
-              : '🔍 Phân tích bằng YouTube API'}
+              : '🔍 Phân tích'}
           </button>
-          {!loading && selectedKeyword && (
+
+          {!loading && selectedKeyword && hasKeys && (
             <span style={{ alignSelf:'flex-end', fontSize:'0.75rem', color:'var(--text-muted)' }}>
               ~{estimatedCalls} API calls
             </span>
           )}
         </div>
+
+        {/* Key status */}
+        {!hasKeys && (
+          <div style={{
+            background:'rgba(255,170,0,0.08)', border:'1px solid rgba(255,170,0,0.25)',
+            borderRadius:8, padding:'8px 14px', marginBottom:12,
+            fontSize:'0.82rem', color:'#ffa726', display:'flex', alignItems:'center', gap:8,
+          }}>
+            ⚠️ Chưa có API key. Bấm <strong>🔍 Phân tích</strong> để nhập key, hoặc vào <strong>⚙️ Cài đặt</strong> để thêm.
+          </div>
+        )}
 
         {/* Export buttons */}
         {(refVideos.length > 0 || refChannels.length > 0) && (
@@ -81,11 +105,14 @@ export default function YoutubeTab({
         )}
 
         {/* Settings quick summary */}
-        <div style={{ marginTop:10, fontSize:'0.75rem', color:'var(--text-muted)', display:'flex', gap:16 }}>
+        <div style={{ marginTop:10, fontSize:'0.75rem', color:'var(--text-muted)', display:'flex', gap:16, flexWrap:'wrap' }}>
           <span>⏱ Min duration: <strong>{settings?.minDurationMin ?? 8} phút</strong></span>
           <span>📅 Time window: <strong>{settings?.timeWindowDays ?? 180} ngày</strong></span>
           <span>🌏 Region: <strong>{settings?.regionCode ?? 'JP'}</strong></span>
           <span>📊 Max results: <strong>{settings?.maxResults ?? 25}</strong></span>
+          {hasKeys && (
+            <span>🔑 Keys: <strong style={{ color:'var(--green)' }}>{(settings?.apiKeys ?? []).filter(k=>k.trim()).length} key</strong></span>
+          )}
         </div>
       </section>
 
@@ -110,6 +137,14 @@ export default function YoutubeTab({
           {activeSubTab === 'videos' && <RefVideoTable videos={refVideos} keyword={lastKeyword} />}
           {activeSubTab === 'channels' && <RefChannelTable channels={refChannels} />}
         </section>
+      )}
+
+      {/* API Key Modal */}
+      {showKeyModal && (
+        <ApiKeyModal
+          onSave={handleModalSave}
+          onCancel={() => setShowKeyModal(false)}
+        />
       )}
     </div>
   );

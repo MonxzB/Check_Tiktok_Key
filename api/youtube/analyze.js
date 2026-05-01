@@ -123,6 +123,7 @@ export default async function handler(req, res) {
     return data;
   }
 
+  try {
     const publishedAfter = timeWindowDays < 3650
       ? new Date(Date.now() - timeWindowDays * 86400000).toISOString()
       : undefined;

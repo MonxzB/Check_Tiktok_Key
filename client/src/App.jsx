@@ -117,6 +117,7 @@ export default function App() {
           onExportVideos={exportVideosCsv}
           onExportChannels={exportChannelsCsv}
           settings={settings}
+          onSaveKeys={(keys) => updateSettings({ apiKeys: keys, activeKeyIndex: 0 })}
         />
       </div>
 
