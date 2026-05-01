@@ -24,7 +24,7 @@ function analyzeCompetition(channels) {
   return { big, medium, small, total:channels.length, avgSubs, avgRatio, difficulty, diffColor };
 }
 
-export default function RefChannelTable({ channels }) {
+export default function RefChannelTable({ channels, onTrack, trackedIds = [] }) {
   const [sortCol, setSortCol]     = useState('fitScore');
   const [sortDir, setSortDir]     = useState('desc');
   const [hideRisky, setHideRisky] = useState(true);
@@ -240,6 +240,7 @@ export default function RefChannelTable({ channels }) {
                   {c.label}
                 </th>
               ))}
+              {onTrack && <th style={{ background: 'rgba(99,102,241,0.06)', textAlign: 'center', whiteSpace: 'nowrap' }}>Track</th>}
             </tr>
           </thead>
           <tbody>
@@ -274,6 +275,21 @@ export default function RefChannelTable({ channels }) {
                   <td style={{ fontSize:'0.75rem', color:'var(--text-muted)', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                     {ch.reason}
                   </td>
+                  {onTrack && (
+                    <td style={{ textAlign: 'center', padding: '4px 8px' }}>
+                      {trackedIds.includes(ch.channelId) ? (
+                        <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 600 }}>✓ Tracking</span>
+                      ) : (
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '3px 10px', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
+                          onClick={(e) => { e.stopPropagation(); onTrack(ch); }}
+                        >
+                          ⭐ Track
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               );
             })}
