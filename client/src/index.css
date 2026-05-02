@@ -429,7 +429,8 @@ code { font-family: 'Courier New', monospace; background:rgba(0,229,255,0.08); p
 @media(max-width:480px){ .detail-grid { grid-template-columns:1fr 1fr !important; } }
 @media(min-width:481px) and (max-width:699px){ .detail-grid { grid-template-columns:1fr 1fr !important; } }
 @media(min-width:700px){ .detail-grid { grid-template-columns:repeat(4,1fr); } }
-.detail-grid .detail-item:last-child { grid-column:span 2; }
+/* Score total card: full-width regardless of column count */
+.detail-grid .detail-item:last-child { grid-column: 1 / -1; }
 
 /* ----- TABLE auto col width for long-form ----- */
 .table-wrapper table { table-layout:auto; }

@@ -148,7 +148,7 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.desc}</div>
                 </div>
               ))}
-              <div className="detail-item" style={{ gridColumn: 'span 2', textAlign: 'center' }}>
+              <div className="detail-item" style={{ gridColumn: 'span 4', textAlign: 'center' }}>
                 <div className="label">Long-Form Score Tổng</div>
                 <div className="value" style={{ fontSize: '2rem', color: scoreColor(kw.longFormScore, 100) }}>
                   {kw.longFormScore}<span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/100</span>
