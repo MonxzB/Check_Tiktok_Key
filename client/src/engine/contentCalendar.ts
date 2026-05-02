@@ -104,12 +104,12 @@ function buildEntry(kw: Keyword, date: Date, idx: number): CalendarEntry {
   return {
     id: `cal-${idx}-${kw.keyword.replace(/\s+/g, '_').slice(0, 20)}`,
     keyword: kw,
-    suggestedDate: new Date(date),
+    suggestedDate: new Date(date),   // always a real Date object
     contentType,
     priority: scoreToPriority(kw.longFormScore),
     estimatedScore: kw.longFormScore,
-    title,
-    chapters: kw.chapters?.slice(0, 5) ?? [],
+    title: String(title ?? kw.keyword),
+    chapters: Array.isArray(kw.chapters) ? kw.chapters.slice(0, 5) : [],
     notes: kw.reason ?? '',
     status: 'planned',
   };
@@ -170,7 +170,7 @@ export function generateCalendar(
   return {
     weeks: weeks.filter(w => w.entries.length > 0), // Only non-empty weeks
     totalEntries: entryIdx,
-    publishingDays,
+    publishingDays: publishDays,   // Fix: was 'publishingDays' (shorthand for undefined var)
     options,
   };
 }

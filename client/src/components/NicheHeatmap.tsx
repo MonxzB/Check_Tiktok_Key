@@ -182,8 +182,8 @@ export default function NicheHeatmap({ keywords, onSelectNiche, activeNiche }: N
       </div>
 
       {visible && (
-        <div style={{ height: mapHeight }}>
-          <ResponsiveContainer width="100%" height="100%">
+        <div style={{ height: mapHeight, minHeight: mapHeight, width: '100%' }}>
+          <ResponsiveContainer width="100%" height={mapHeight}>
             <Treemap
               data={data as unknown as Record<string, unknown>[]}
               dataKey="size"

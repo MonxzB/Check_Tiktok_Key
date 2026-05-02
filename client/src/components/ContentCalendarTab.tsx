@@ -38,8 +38,15 @@ const PRIORITY_BADGE: Record<CalendarEntry['priority'], string> = {
   low:    '⚪',
 };
 
-function formatDate(d: Date): string {
-  return d.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' });
+// Safe: handles both Date object and ISO string (from JSON round-trips)
+function toDate(val: Date | string | undefined): Date {
+  if (!val) return new Date();
+  const d = val instanceof Date ? val : new Date(val);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+
+function formatDate(d: Date | string | undefined): string {
+  return toDate(d).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' });
 }
 
 // ── Entry Card ────────────────────────────────────────────────
@@ -53,7 +60,7 @@ function EntryCard({ entry, onUpdate }: {
 
   const dateStr = entry.customDate
     ? formatDate(new Date(entry.customDate))
-    : formatDate(entry.suggestedDate);
+    : formatDate(toDate(entry.suggestedDate));
 
   function handleStatusCycle() {
     const cycle: CalendarEntry['status'][] = ['planned', 'in-progress', 'published', 'skipped'];
@@ -305,7 +312,12 @@ export default function ContentCalendarTab({ keywords }: ContentCalendarTabProps
 
   const rawCalendar = useMemo(() => {
     if (!keywords.length) return null;
-    return generateCalendar(keywords, options);
+    try {
+      return generateCalendar(keywords, options);
+    } catch (err) {
+      console.error('[ContentCalendar] generateCalendar failed:', err);
+      return null;
+    }
   }, [keywords, options]);
 
   const calendar = useMemo(() => {

@@ -14,6 +14,7 @@ import type { PerformanceRating } from '../engine/personalizedScoring.ts';
 
 const SeoTab = lazy(() => import('./SeoTab.js'));
 const MonetizationTab = lazy(() => import('./MonetizationTab.js'));
+const ThumbnailTab = lazy(() => import('./ThumbnailTab.js'));
 
 type Period = '7d' | '30d' | '90d' | 'all';
 
@@ -28,7 +29,7 @@ interface DetailModalProps {
 
 interface ScoreDimension { label: string; value: number; max: number; desc: string; }
 
-type TabId = 'detail' | 'trend' | 'feedback' | 'seo' | 'monetization';
+type TabId = 'detail' | 'trend' | 'feedback' | 'seo' | 'monetization' | 'thumbnail';
 
 export default function DetailModal({ kw, onClose, onAnalyze, snapshots, personalScoring, refVideos = [] }: DetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('detail');
@@ -103,13 +104,13 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, marginTop: 20, marginBottom: 0, borderBottom: '1px solid var(--glass-border)', overflowX: 'auto' }}>
-          {(['detail', 'trend', 'feedback', 'seo', 'monetization'] as const).map(t => (
+          {(['detail', 'trend', 'feedback', 'seo', 'monetization', 'thumbnail'] as const).map(t => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
               style={{
-                padding: '7px 16px', border: 'none', background: 'none', cursor: 'pointer',
-                fontSize: '0.82rem', fontWeight: activeTab === t ? 700 : 400,
+                padding: '7px 14px', border: 'none', background: 'none', cursor: 'pointer',
+                fontSize: '0.80rem', fontWeight: activeTab === t ? 700 : 400,
                 color: activeTab === t ? 'var(--accent)' : 'var(--text-muted)',
                 borderBottom: activeTab === t ? '2px solid var(--accent)' : '2px solid transparent',
                 marginBottom: -1, transition: 'all 0.15s', whiteSpace: 'nowrap', flexShrink: 0,
@@ -119,7 +120,8 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
                 : t === 'trend' ? '📈 Trend'
                 : t === 'feedback' ? '📊 Feedback'
                 : t === 'seo' ? '🎯 SEO'
-                : '💰 Monetize'}
+                : t === 'monetization' ? '💰 Monetize'
+                : '🎨 Thumbnail'}
             </button>
           ))}
         </div>
@@ -300,8 +302,8 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
                 </div>
 
                 {/* Line chart */}
-                <div style={{ height: 240 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <div style={{ height: 240, minHeight: 240, width: '100%' }}>
+                  <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                       <XAxis dataKey="date" tick={{ fill: '#888', fontSize: 10 }} />
@@ -350,6 +352,17 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
             </div>
           }>
             <MonetizationTab keyword={kw} lang={kw.contentLanguage ?? 'ja'} />
+          </Suspense>
+        )}
+
+        {/* Thumbnail A/B Tab (Phase 15) */}
+        {activeTab === 'thumbnail' && (
+          <Suspense fallback={
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+              <span className="spinner" style={{ width: 20, height: 20 }} />
+            </div>
+          }>
+            <ThumbnailTab keyword={kw} lang={kw.contentLanguage ?? 'ja'} />
           </Suspense>
         )}
       </div>
