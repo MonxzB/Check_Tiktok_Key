@@ -9,17 +9,14 @@ interface CompetitorTabProps {
   keywords: Keyword[];
   settings: ExtendedSettings;
 }
-
 type VideoFilter = { channelId: string; days: number };
 
 function formatDur(sec: number): string {
   if (!sec) return '—';
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
+  const m = Math.floor(sec / 60), s = sec % 60;
   if (sec >= 3600) return `${Math.floor(sec/3600)}:${String(m % 60).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   return `${m}:${String(s).padStart(2,'0')}`;
 }
-
 function timeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
   if (diff < 3600) return `${Math.floor(diff / 60)}m trước`;
@@ -34,7 +31,6 @@ export default function CompetitorTab({ tracker, keywords, settings }: Competito
 
   const apiKeys = (settings?.apiKeys ?? []).filter((k: string) => k.trim());
 
-  // ── Filtered videos ──────────────────────────────────────────
   const filteredVideos = useMemo(() => {
     const cutoff = Date.now() - filter.days * 86_400_000;
     return videos.filter(v => {
@@ -44,13 +40,12 @@ export default function CompetitorTab({ tracker, keywords, settings }: Competito
     });
   }, [videos, filter]);
 
-  // ── Empty state ──────────────────────────────────────────────
   if (!channels.length && !loading) {
     return (
-      <section className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
-        <div style={{ fontSize: '3rem', marginBottom: 12 }}>👥</div>
-        <h3 style={{ margin: '0 0 8px' }}>Chưa có kênh đang theo dõi</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+      <section className="card text-center py-12 px-6">
+        <div className="text-5xl mb-3">👥</div>
+        <h3 className="m-0 mb-2">Chưa có kênh đang theo dõi</h3>
+        <p className="text-text-muted text-[0.88rem]">
           Trong tab YouTube Research → bảng kênh → bấm "⭐ Track" để thêm kênh vào đây.
         </p>
       </section>
@@ -58,29 +53,23 @@ export default function CompetitorTab({ tracker, keywords, settings }: Competito
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* ── Section 1: Tracked channels ────────────────────────── */}
+    <div className="flex flex-col gap-5">
+      {/* ── Section 1: Tracked channels ─────────────────────── */}
       <section className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <h2 style={{ margin: 0 }}>
+        <div className="flex justify-between items-center mb-3.5">
+          <h2 className="m-0">
             <span className="icon">👥</span> Kênh đang theo dõi
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400, marginLeft: 8 }}>({channels.length})</span>
+            <span className="text-[0.8rem] text-text-muted font-normal ml-2">({channels.length})</span>
           </h2>
-          <button
-            className="btn btn-primary"
-            style={{ padding: '7px 16px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}
-            onClick={() => refreshAll(apiKeys, keywords)}
-            disabled={refreshing || !apiKeys.length}
-            title={!apiKeys.length ? 'Thêm API Key trong Cài đặt' : ''}
-          >
-            {refreshing
-              ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Đang tải...</>
-              : '🔄 Refresh all'}
+          <button className="btn btn-primary flex items-center gap-1.5" style={{ padding: '7px 16px', fontSize: '0.82rem' }}
+            onClick={() => refreshAll(apiKeys, keywords)} disabled={refreshing || !apiKeys.length}
+            title={!apiKeys.length ? 'Thêm API Key trong Cài đặt' : ''}>
+            {refreshing ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Đang tải...</> : '🔄 Refresh all'}
           </button>
         </div>
 
         {loading && (
-          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)' }}>
+          <div className="text-center py-5 text-text-muted">
             <span className="spinner" style={{ width: 20, height: 20 }} />
           </div>
         )}
@@ -90,7 +79,7 @@ export default function CompetitorTab({ tracker, keywords, settings }: Competito
             <table>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left' }}>Kênh</th>
+                  <th className="text-left">Kênh</th>
                   <th>Subscribers</th>
                   <th>Video count</th>
                   <th>Last refresh</th>
@@ -102,29 +91,19 @@ export default function CompetitorTab({ tracker, keywords, settings }: Competito
                   <tr key={ch.id}>
                     <td>
                       <a href={ch.channelUrl} target="_blank" rel="noreferrer"
-                        style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>
-                        {ch.channelTitle}
-                      </a>
+                        className="text-accent font-semibold no-underline">{ch.channelTitle}</a>
                     </td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{formatNum(ch.subCount)}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{ch.videoCount || '—'}</td>
-                    <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    <td className="text-text-secondary">{formatNum(ch.subCount)}</td>
+                    <td className="text-text-secondary">{ch.videoCount || '—'}</td>
+                    <td className="text-[0.78rem] text-text-muted">
                       {ch.lastRefreshAt ? timeAgo(ch.lastRefreshAt) : 'Chưa refresh'}
                     </td>
-                    <td style={{ display: 'flex', gap: 6, padding: '6px 10px' }}>
-                      <button
-                        className="btn btn-secondary"
-                        style={{ padding: '3px 10px', fontSize: '0.72rem' }}
+                    <td className="flex gap-1.5 py-1.5 px-2.5">
+                      <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: '0.72rem' }}
                         onClick={() => refreshOne(ch.channelId, apiKeys, keywords)}
-                        disabled={refreshing || !apiKeys.length}
-                      >
-                        🔄
-                      </button>
-                      <button
-                        className="btn btn-secondary"
-                        style={{ padding: '3px 10px', fontSize: '0.72rem', color: 'var(--red)' }}
-                        onClick={() => { if (confirm(`Untrack "${ch.channelTitle}"?`)) removeChannel(ch.id); }}
-                      >
+                        disabled={refreshing || !apiKeys.length}>🔄</button>
+                      <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: '0.72rem', color: '#ff1744' }}
+                        onClick={() => { if (confirm(`Untrack "${ch.channelTitle}"?`)) removeChannel(ch.id); }}>
                         Untrack
                       </button>
                     </td>
@@ -136,28 +115,21 @@ export default function CompetitorTab({ tracker, keywords, settings }: Competito
         )}
       </section>
 
-      {/* ── Section 2: Recent videos timeline ──────────────────── */}
+      {/* ── Section 2: Recent videos ──────────────────────────── */}
       <section className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={{ margin: 0 }}>
+        <div className="flex justify-between items-center mb-3.5 flex-wrap gap-2.5">
+          <h2 className="m-0">
             <span className="icon">🎬</span> Video gần đây
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400, marginLeft: 8 }}>({filteredVideos.length})</span>
+            <span className="text-[0.8rem] text-text-muted font-normal ml-2">({filteredVideos.length})</span>
           </h2>
-          {/* Filters */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select
-              value={filter.channelId}
-              onChange={e => setFilter(f => ({ ...f, channelId: e.target.value }))}
-              style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'var(--text)', padding: '5px 10px', borderRadius: 8, fontSize: '0.8rem' }}
-            >
+          <div className="flex gap-2 items-center flex-wrap">
+            <select value={filter.channelId} onChange={e => setFilter(f => ({ ...f, channelId: e.target.value }))}
+              className="text-[0.8rem]" style={{ padding: '5px 10px' }}>
               <option value="">Tất cả kênh</option>
               {channels.map(ch => <option key={ch.channelId} value={ch.channelId}>{ch.channelTitle}</option>)}
             </select>
-            <select
-              value={filter.days}
-              onChange={e => setFilter(f => ({ ...f, days: parseInt(e.target.value) }))}
-              style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'var(--text)', padding: '5px 10px', borderRadius: 8, fontSize: '0.8rem' }}
-            >
+            <select value={filter.days} onChange={e => setFilter(f => ({ ...f, days: parseInt(e.target.value) }))}
+              className="text-[0.8rem]" style={{ padding: '5px 10px' }}>
               <option value={7}>7 ngày</option>
               <option value={30}>30 ngày</option>
               <option value={90}>90 ngày</option>
@@ -167,15 +139,13 @@ export default function CompetitorTab({ tracker, keywords, settings }: Competito
         </div>
 
         {filteredVideos.length === 0 && !refreshing && (
-          <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+          <div className="text-center py-8 text-text-muted text-[0.88rem]">
             <p>Chưa có video. Bấm "🔄 Refresh all" để tải video mới.</p>
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
-          {filteredVideos.map(v => (
-            <VideoCard key={v.videoId} video={v} channels={channels} />
-          ))}
+        <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))' }}>
+          {filteredVideos.map(v => <VideoCard key={v.videoId} video={v} channels={channels} />)}
         </div>
       </section>
     </div>
@@ -184,52 +154,43 @@ export default function CompetitorTab({ tracker, keywords, settings }: Competito
 
 // ── Video Card ───────────────────────────────────────────────
 function VideoCard({ video, channels }: { video: ChannelVideo; channels: TrackedChannel[] }) {
-  const ch = channels.find(c => c.channelId === video.channelId);
+  const ch         = channels.find(c => c.channelId === video.channelId);
   const hasMatches = (video.matchedKeywords?.length ?? 0) > 0;
 
   return (
-    <a
-      href={video.videoUrl}
-      target="_blank"
-      rel="noreferrer"
-      style={{ textDecoration: 'none', display: 'block' }}
-    >
-      <div style={{
-        background: hasMatches ? 'rgba(0,229,255,0.04)' : 'var(--glass)',
-        border: hasMatches ? '1px solid rgba(0,229,255,0.2)' : '1px solid var(--glass-border)',
-        borderRadius: 10, overflow: 'hidden',
-        transition: 'transform 0.15s, box-shadow 0.15s',
-      }}
-        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
-      >
+    <a href={video.videoUrl} target="_blank" rel="noreferrer" className="no-underline block">
+      <div className="rounded-[10px] overflow-hidden transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg"
+        style={{
+          background: hasMatches ? 'rgba(0,229,255,0.04)' : 'rgba(255,255,255,0.04)',
+          border: hasMatches ? '1px solid rgba(0,229,255,0.2)' : '1px solid rgba(255,255,255,0.08)',
+        }}>
         {/* Thumbnail */}
-        <div style={{ position: 'relative', aspectRatio: '16/9', background: '#111' }}>
+        <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
           {video.thumbnailUrl && (
-            <img src={video.thumbnailUrl} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
           )}
           {video.durationSec > 0 && (
-            <span style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: '0.72rem', padding: '2px 5px', borderRadius: 4 }}>
+            <span className="absolute bottom-1.5 right-1.5 text-white text-[0.72rem] px-1.5 py-0.5 rounded"
+              style={{ background: 'rgba(0,0,0,0.8)' }}>
               {formatDur(video.durationSec)}
             </span>
           )}
         </div>
         {/* Info */}
-        <div style={{ padding: '10px 12px' }}>
-          <p className="jp-text" style={{ margin: 0, fontSize: '0.84rem', fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <div className="p-3">
+          <p className="jp-text m-0 text-[0.84rem] font-semibold leading-snug overflow-hidden"
+            style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {video.title}
           </p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-            <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{ch?.channelTitle || video.channelId}</span>
+          <div className="flex justify-between mt-1.5 text-[0.72rem] text-text-muted">
+            <span className="text-accent font-medium">{ch?.channelTitle || video.channelId}</span>
             <span>{formatNum(video.viewCount)} views</span>
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
-            {timeAgo(video.publishedAt)}
-          </div>
-          {/* Keyword match badge */}
+          <div className="text-[0.7rem] text-text-muted mt-0.5">{timeAgo(video.publishedAt)}</div>
           {hasMatches && (
-            <div style={{ marginTop: 8, padding: '4px 8px', background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 6, fontSize: '0.7rem', color: 'var(--accent)' }}>
-              🎯 Liên quan: {video.matchedKeywords!.slice(0, 2).join(', ')}
+            <div className="mt-2 px-2 py-1 rounded-md text-[0.7rem] text-accent"
+              style={{ background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.2)' }}>
+              🎯 Liên quan: {video.matchedKeywords!.slice(0,2).join(', ')}
               {video.matchedKeywords!.length > 2 && ` +${video.matchedKeywords!.length - 2}`}
             </div>
           )}

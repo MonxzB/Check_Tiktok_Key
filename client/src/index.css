@@ -3,6 +3,8 @@
    Tailwind utilities are available alongside existing classes.
    Preflight is DISABLED to prevent conflicts with existing CSS.
    ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -118,8 +120,6 @@
   /* Grid field group */
   .tw-field { @apply flex flex-col gap-1 min-w-0; }
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
 :root {
   --bg-primary: #060b18;
