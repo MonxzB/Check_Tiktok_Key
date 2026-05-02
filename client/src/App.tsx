@@ -28,6 +28,8 @@ import { useWorkspaces } from './hooks/useWorkspaces.ts';
 import { useAuth } from './hooks/useAuth.tsx';
 import { useYoutubeConnection } from './hooks/useYoutubeConnection.ts';
 import GapAnalysisTab from './components/GapAnalysisTab.tsx';
+import { usePersonalScoring } from './hooks/usePersonalScoring.ts';
+import { applyPersonalWeights } from './engine/personalizedScoring.ts';
 import type { TabId } from './types';
 
 const DEFAULT_FILTERS: KeywordFilters = {
@@ -52,10 +54,11 @@ export default function App() {
     expand, score, clear, exportCsv, importCsv, updateApiData, snapshots,
   } = useKeywords(toast, activeWorkspaceId);
 
-  const bulk     = useBulkAnalyze(updateApiData, settings, toast);
-  const compare  = useCompare();
-  const tracker  = useTrackedChannels(activeWorkspaceId);
-  const ytConn   = useYoutubeConnection(user?.id ?? null);
+  const bulk           = useBulkAnalyze(updateApiData, settings, toast);
+  const compare        = useCompare();
+  const tracker        = useTrackedChannels(activeWorkspaceId);
+  const ytConn         = useYoutubeConnection(user?.id ?? null);
+  const personalScoring = usePersonalScoring(user?.id ?? null);
 
   const { refVideos, refChannels, loading: ytLoading, serverConfigured, lastKeyword, analyzeKeyword, exportVideosCsv, exportChannelsCsv, checkStatus } = useYoutube(toast, updateApiData, settings);
 
@@ -108,6 +111,14 @@ export default function App() {
     return true;
   });
 
+  // ── Apply personalized weights when enabled ──────────────────
+  const displayKeywords = personalScoring.enabled
+    ? keywords.map(kw => ({
+        ...kw,
+        longFormScore: applyPersonalWeights(kw, personalScoring.weights),
+      }))
+    : keywords;
+
   // ── Skeleton loading (no flash) ───────────────────────────────
   const showSkeleton = kwLoading && keywords.length === 0;
 
@@ -147,14 +158,14 @@ export default function App() {
         {/* Phase 8: Niche Heatmap — above StatsBar */}
         {!showSkeleton && hasResults && (
           <NicheHeatmap
-            keywords={keywords}
+            keywords={displayKeywords}
             onSelectNiche={handleSelectNiche}
             activeNiche={activeFilters.niche || ''}
           />
         )}
-        {!showSkeleton && hasResults && <StatsBar keywords={keywords} />}
-        {!showSkeleton && hasResults && <PanelGrid keywords={keywords} onSelectKeyword={setSelectedKw} />}
-        {!showSkeleton && hasResults && <BranchSection keywords={keywords} />}
+        {!showSkeleton && hasResults && <StatsBar keywords={displayKeywords} />}
+        {!showSkeleton && hasResults && <PanelGrid keywords={displayKeywords} onSelectKeyword={setSelectedKw} />}
+        {!showSkeleton && hasResults && <BranchSection keywords={displayKeywords} />}
         {/* Resume bulk job banner */}
         {bulk.hasResumable && bulk.state.status === 'idle' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', marginBottom: 12, background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 10, fontSize: '0.84rem' }}>
@@ -165,7 +176,7 @@ export default function App() {
 
         {!showSkeleton && hasResults && (
           <KeywordTable
-            keywords={keywords}
+            keywords={displayKeywords}
             filters={activeFilters}
             onSelectKeyword={setSelectedKw}
             onAnalyzeKeyword={handleAnalyzeKeyword}
@@ -236,10 +247,11 @@ export default function App() {
           settings={settings}
           onUpdate={updateSettings}
           onReset={resetSettings}
+          personalScoring={personalScoring}
         />
       </div>
 
-      {selectedKw && <DetailModal kw={selectedKw} onClose={() => setSelectedKw(null)} onAnalyze={handleAnalyzeKeyword} snapshots={snapshots} />}
+      {selectedKw && <DetailModal kw={selectedKw} onClose={() => setSelectedKw(null)} onAnalyze={handleAnalyzeKeyword} snapshots={snapshots} personalScoring={personalScoring} />}
       <Toast toasts={toasts} />
     </div>
   );

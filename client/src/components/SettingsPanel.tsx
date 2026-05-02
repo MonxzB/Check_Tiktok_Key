@@ -7,11 +7,14 @@ import CustomSelect from './CustomSelect.js';
 import { useYoutubeConnection } from '../hooks/useYoutubeConnection.ts';
 import { useAuth } from '../hooks/useAuth.tsx';
 import { formatNum } from './utils.ts';
+import type { UsePersonalScoringReturn } from '../hooks/usePersonalScoring.ts';
+import { SCORE_KEYS, DEFAULT_WEIGHTS } from '../engine/personalizedScoring.ts';
 
 interface SettingsPanelProps {
   settings: ExtendedSettings;
   onUpdate: (partial: Partial<ExtendedSettings>) => void;
   onReset: () => void;
+  personalScoring?: UsePersonalScoringReturn;
 }
 
 interface QuotaDisplay extends QuotaInfo {
@@ -19,7 +22,7 @@ interface QuotaDisplay extends QuotaInfo {
   masked: string;
 }
 
-export default function SettingsPanel({ settings, onUpdate, onReset }: SettingsPanelProps) {
+export default function SettingsPanel({ settings, onUpdate, onReset, personalScoring }: SettingsPanelProps) {
   const { user } = useAuth();
   const ytConn   = useYoutubeConnection(user?.id ?? null);
 
@@ -187,6 +190,80 @@ export default function SettingsPanel({ settings, onUpdate, onReset }: SettingsP
             </div>
           )}
         </div>
+
+        {/* ── Personalized Scoring section ─────────────────── */}
+        {personalScoring && (
+          <div style={{ marginTop: 24, borderTop: '1px solid var(--glass-border)', paddingTop: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h3 style={{ fontSize: '0.88rem', fontWeight: 700, margin: 0 }}>🧠 Personalized Scoring (ML-lite)</h3>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.82rem', color: personalScoring.enabled ? 'var(--accent)' : 'var(--text-muted)' }}>
+                <input type="checkbox" checked={personalScoring.enabled} onChange={e => personalScoring.setEnabled(e.target.checked)} />
+                {personalScoring.enabled ? 'Bật' : 'Tắt'}
+              </label>
+            </div>
+
+            {/* Progress to training */}
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+              {personalScoring.needMore > 0 ? (
+                <span>⏳ Cần <strong style={{ color: 'var(--accent)' }}>{personalScoring.needMore}</strong> feedback nữa để bắt đầu train · Hiện có: {personalScoring.feedbacks.filter(f => f.made_video && f.performance).length}</span>
+              ) : (
+                <span>✅ Đủ {personalScoring.feedbacks.filter(f => f.made_video && f.performance).length} feedback — sẵn sàng train!</span>
+              )}
+            </div>
+
+            {/* Weights table */}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                <thead>
+                  <tr style={{ color: 'var(--text-muted)' }}>
+                    <th style={{ textAlign: 'left', padding: '4px 8px' }}>Dimension</th>
+                    <th style={{ textAlign: 'center', padding: '4px 8px' }}>Default</th>
+                    <th style={{ textAlign: 'center', padding: '4px 8px' }}>Current</th>
+                    <th style={{ textAlign: 'left', padding: '4px 8px' }}>Bar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SCORE_KEYS.map(key => {
+                    const w = personalScoring.weights[key];
+                    const pct = ((w - 0.5) / 1.0) * 100; // 0.5→0%, 1.0→50%, 1.5→100%
+                    const color = w > 1.05 ? '#4ade80' : w < 0.95 ? '#f87171' : '#60a5fa';
+                    return (
+                      <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <td style={{ padding: '5px 8px', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{key.replace(/([A-Z])/g, ' $1')}</td>
+                        <td style={{ textAlign: 'center', padding: '5px 8px', color: 'var(--text-muted)' }}>{DEFAULT_WEIGHTS[key].toFixed(1)}</td>
+                        <td style={{ textAlign: 'center', padding: '5px 8px', fontWeight: 600, color }}>{w.toFixed(3)}</td>
+                        <td style={{ padding: '5px 8px' }}>
+                          <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, width: 80, position: 'relative' }}>
+                            <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${pct}%`, background: color, borderRadius: 3, transition: 'width 0.3s' }} />
+                            <div style={{ position: 'absolute', left: '50%', top: -1, width: 1, height: 8, background: 'rgba(255,255,255,0.3)' }} />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: '0.78rem', padding: '6px 14px' }}
+                onClick={personalScoring.retrain}
+                disabled={personalScoring.training || personalScoring.needMore > 0}
+              >
+                {personalScoring.training ? <><span className="spinner" style={{ width: 11, height: 11 }} /> Training...</> : '🧠 Re-train weights'}
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ fontSize: '0.78rem', padding: '6px 14px' }}
+                onClick={personalScoring.resetWeights}
+              >
+                ↺ Reset về default
+              </button>
+            </div>
+          </div>
+        )}
 
         <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: 16 }}>
           <button className="btn btn-secondary" onClick={onReset}>↺ Reset về mặc định</button>

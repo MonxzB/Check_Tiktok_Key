@@ -9,6 +9,8 @@ import {
 import type { KeywordSnapshot } from '../engine/trendDetection.ts';
 import { calculateTrend, filterByPeriod } from '../engine/trendDetection.ts';
 import type { UseKeywordsReturn } from '../hooks/useKeywords.ts';
+import type { UsePersonalScoringReturn } from '../hooks/usePersonalScoring.ts';
+import type { PerformanceRating } from '../engine/personalizedScoring.ts';
 
 type Period = '7d' | '30d' | '90d' | 'all';
 
@@ -17,13 +19,14 @@ interface DetailModalProps {
   onClose: () => void;
   onAnalyze?: (keyword: string) => void;
   snapshots?: UseKeywordsReturn['snapshots'];
+  personalScoring?: UsePersonalScoringReturn;
 }
 
 interface ScoreDimension { label: string; value: number; max: number; desc: string; }
 
-type TabId = 'detail' | 'trend';
+type TabId = 'detail' | 'trend' | 'feedback';
 
-export default function DetailModal({ kw, onClose, onAnalyze, snapshots }: DetailModalProps) {
+export default function DetailModal({ kw, onClose, onAnalyze, snapshots, personalScoring }: DetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('detail');
   const [period, setPeriod]       = useState<Period>('30d');
   const [kwSnapshots, setKwSnapshots] = useState<KeywordSnapshot[]>([]);
@@ -96,7 +99,7 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots }: Detai
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, marginTop: 20, marginBottom: 0, borderBottom: '1px solid var(--glass-border)' }}>
-          {(['detail', 'trend'] as const).map(t => (
+          {(['detail', 'trend', 'feedback'] as const).map(t => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
@@ -108,7 +111,7 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots }: Detai
                 marginBottom: -1, transition: 'all 0.15s',
               }}
             >
-              {t === 'detail' ? '📋 Chi tiết' : '📈 Trend'}
+              {t === 'detail' ? '📋 Chi tiết' : t === 'trend' ? '📈 Trend' : '📊 Feedback'}
             </button>
           ))}
         </div>
@@ -314,7 +317,120 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots }: Detai
             )}
           </div>
         )}
+
+        {/* Feedback Tab */}
+        {activeTab === 'feedback' && (
+          <FeedbackPanel kw={kw} personalScoring={personalScoring} />
+        )}
       </div>
+    </div>
+  );
+}
+
+// ── Feedback Panel ────────────────────────────────────────────
+const PERF_OPTIONS: Array<{ value: PerformanceRating; emoji: string; label: string; color: string }> = [
+  { value: 'great',   emoji: '⭐', label: 'Great',   color: '#4ade80' },
+  { value: 'good',    emoji: '👍', label: 'Good',    color: '#60a5fa' },
+  { value: 'bad',     emoji: '😐', label: 'Bad',     color: '#f59e0b' },
+  { value: 'flopped', emoji: '💀', label: 'Flopped', color: '#f87171' },
+];
+
+function FeedbackPanel({ kw, personalScoring }: { kw: Keyword; personalScoring?: UsePersonalScoringReturn }) {
+  const existing = personalScoring?.getFeedback(kw.keyword);
+
+  const [madeVideo, setMadeVideo]   = useState<boolean>(existing?.made_video ?? false);
+  const [perf, setPerf]             = useState<PerformanceRating | undefined>(existing?.performance);
+  const [views, setViews]           = useState<string>(String(existing?.actual_views ?? ''));
+  const [notes, setNotes]           = useState<string>(existing?.notes ?? '');
+  const [saving, setSaving]         = useState(false);
+  const [saved, setSaved]           = useState(false);
+
+  async function handleSave() {
+    if (!personalScoring) return;
+    setSaving(true);
+    await personalScoring.submitFeedback({
+      keyword: kw,
+      made_video: madeVideo,
+      performance: madeVideo ? perf : undefined,
+      actual_views: views ? parseInt(views) : undefined,
+      notes: notes || undefined,
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  if (!personalScoring) {
+    return (
+      <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+        Personalized Scoring chưa được kết nối. Vào Settings → Bật Personalized Scoring.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '20px 4px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+      {/* Made video? */}
+      <div>
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: 10 }}>
+          🎞️ Bạn đã làm video về keyword này chưa?
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[{ v: false, label: 'Chưa' }, { v: true, label: 'Đã làm' }].map(opt => (
+            <button key={String(opt.v)} onClick={() => setMadeVideo(opt.v)}
+              className="btn btn-secondary"
+              style={{ padding: '7px 18px', fontSize: '0.85rem', background: madeVideo === opt.v ? 'var(--accent)' : '', color: madeVideo === opt.v ? '#000' : '' }}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Performance (only if made video) */}
+      {madeVideo && (
+        <>
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 10 }}>Performance:</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {PERF_OPTIONS.map(opt => (
+                <button key={opt.value} onClick={() => setPerf(opt.value)}
+                  className="btn btn-secondary"
+                  style={{ padding: '7px 14px', fontSize: '0.85rem',
+                    background: perf === opt.value ? opt.color + '33' : '',
+                    border: perf === opt.value ? `1px solid ${opt.color}` : '',
+                    color: perf === opt.value ? opt.color : '' }}>
+                  {opt.emoji} {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Actual views:</label>
+            <input type="number" value={views} onChange={e => setViews(e.target.value)}
+              placeholder="Ví dụ: 15000"
+              style={{ width: '100%', background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'var(--text)', padding: '8px 12px', borderRadius: 8, fontSize: '0.85rem' }} />
+          </div>
+        </>
+      )}
+
+      <div>
+        <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Notes:</label>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)}
+          rows={3} placeholder="Ghi chú thêm..."
+          style={{ width: '100%', background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'var(--text)', padding: '8px 12px', borderRadius: 8, fontSize: '0.83rem', fontFamily: 'inherit', resize: 'vertical' }} />
+      </div>
+
+      <button className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '8px 20px' }}
+        onClick={handleSave} disabled={saving}>
+        {saving ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Đang lưu...</> : saved ? '✓ Đã lưu!' : '💾 Lưu feedback'}
+      </button>
+
+      {existing && (
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--glass)', borderRadius: 8 }}>
+          Đã lưu: {existing.performance || 'Chưa có rating'}{existing.actual_views ? ` · ${existing.actual_views.toLocaleString()} views` : ''}
+        </div>
+      )}
     </div>
   );
 }
