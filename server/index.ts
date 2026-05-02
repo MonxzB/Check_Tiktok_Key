@@ -6,6 +6,7 @@ import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import youtubeRouter from './routes/youtube.js';
 import channelTrackerRouter from './routes/channelTracker.js';
+import oauthYoutubeRouter from './routes/oauthYoutube.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
@@ -20,6 +21,7 @@ app.use(cors({
 // Routes
 app.use('/api/youtube', youtubeRouter);
 app.use('/api/youtube', channelTrackerRouter);
+app.use('/api/oauth/youtube', oauthYoutubeRouter);
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({

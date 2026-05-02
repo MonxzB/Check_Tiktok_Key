@@ -18,6 +18,7 @@ import CompetitorTab from './components/CompetitorTab.tsx';
 import { useBulkAnalyze } from './hooks/useBulkAnalyze.ts';
 import { useCompare } from './hooks/useCompare.ts';
 import { useTrackedChannels } from './hooks/useTrackedChannels.ts';
+import NicheHeatmap from './components/NicheHeatmap.tsx';
 import Toast from './components/Toast.js';
 import { useToast } from './hooks/useToast.ts';
 import { useKeywords } from './hooks/useKeywords.ts';
@@ -25,6 +26,8 @@ import { useYoutube } from './hooks/useYoutube.ts';
 import { useSettings } from './hooks/useSettings.ts';
 import { useWorkspaces } from './hooks/useWorkspaces.ts';
 import { useAuth } from './hooks/useAuth.tsx';
+import { useYoutubeConnection } from './hooks/useYoutubeConnection.ts';
+import GapAnalysisTab from './components/GapAnalysisTab.tsx';
 import type { TabId } from './types';
 
 const DEFAULT_FILTERS: KeywordFilters = {
@@ -52,6 +55,7 @@ export default function App() {
   const bulk     = useBulkAnalyze(updateApiData, settings, toast);
   const compare  = useCompare();
   const tracker  = useTrackedChannels(activeWorkspaceId);
+  const ytConn   = useYoutubeConnection(user?.id ?? null);
 
   const { refVideos, refChannels, loading: ytLoading, serverConfigured, lastKeyword, analyzeKeyword, exportVideosCsv, exportChannelsCsv, checkStatus } = useYoutube(toast, updateApiData, settings);
 
@@ -84,6 +88,16 @@ export default function App() {
   function handleAnalyzeKeyword(kw: string) {
     setActiveTab('youtube');
     analyzeKeyword(kw);
+  }
+
+  /** Click heatmap cell → set/clear niche filter */
+  function handleSelectNiche(niche: string) {
+    if (niche) {
+      setFilters(f => ({ ...f, niche }));
+      setShowFilter(true);
+    } else {
+      setFilters(f => ({ ...f, niche: '' }));
+    }
   }
 
   const activeFilters = showFilter ? filters : DEFAULT_FILTERS;
@@ -129,6 +143,14 @@ export default function App() {
         )}
         {!showSkeleton && hasResults && showFilter && (
           <FilterBar filters={filters} setFilters={setFilters} onReset={() => setFilters(DEFAULT_FILTERS)} />
+        )}
+        {/* Phase 8: Niche Heatmap — above StatsBar */}
+        {!showSkeleton && hasResults && (
+          <NicheHeatmap
+            keywords={keywords}
+            onSelectNiche={handleSelectNiche}
+            activeNiche={activeFilters.niche || ''}
+          />
         )}
         {!showSkeleton && hasResults && <StatsBar keywords={keywords} />}
         {!showSkeleton && hasResults && <PanelGrid keywords={keywords} onSelectKeyword={setSelectedKw} />}
@@ -196,6 +218,15 @@ export default function App() {
           tracker={tracker}
           keywords={keywords}
           settings={settings}
+        />
+      </div>
+
+      {/* Gap Analysis Tab */}
+      <div style={{ display: activeTab === 'gap' ? 'block' : 'none' }}>
+        <GapAnalysisTab
+          keywords={keywords}
+          ytConn={ytConn}
+          onAnalyzeKeyword={handleAnalyzeKeyword}
         />
       </div>
 

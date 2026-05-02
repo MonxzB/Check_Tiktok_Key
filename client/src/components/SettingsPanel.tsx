@@ -4,6 +4,9 @@ import type { ExtendedSettings } from '../hooks/useSettings.js';
 import type { OrderBy, RegionCode, LanguageCode } from '../types';
 import { getQuotaInfo } from '../engine/quotaTracker.js';
 import CustomSelect from './CustomSelect.js';
+import { useYoutubeConnection } from '../hooks/useYoutubeConnection.ts';
+import { useAuth } from '../hooks/useAuth.tsx';
+import { formatNum } from './utils.ts';
 
 interface SettingsPanelProps {
   settings: ExtendedSettings;
@@ -17,6 +20,9 @@ interface QuotaDisplay extends QuotaInfo {
 }
 
 export default function SettingsPanel({ settings, onUpdate, onReset }: SettingsPanelProps) {
+  const { user } = useAuth();
+  const ytConn   = useYoutubeConnection(user?.id ?? null);
+
   function f<K extends keyof ExtendedSettings>(key: K, val: ExtendedSettings[K]) {
     onUpdate({ [key]: val } as Partial<ExtendedSettings>);
   }
@@ -154,6 +160,32 @@ export default function SettingsPanel({ settings, onUpdate, onReset }: SettingsP
               Ẩn kênh/video rủi ro theo mặc định
             </label>
           </div>
+        </div>
+
+        {/* YouTube Channel connection */}
+        <div style={{ marginTop: 24, borderTop: '1px solid var(--glass-border)', paddingTop: 18 }}>
+          <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', margin: '0 0 12px' }}>🔗 YouTube Channel (Gap Analysis)</h3>
+          {ytConn.loading ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}><span className="spinner" style={{ width: 12, height: 12 }} /> Đang kiểm tra...</div>
+          ) : ytConn.connection ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 8 }}>
+              {ytConn.connection.channelThumb && <img src={ytConn.connection.channelThumb} alt="" style={{ width: 36, height: 36, borderRadius: '50%' }} />}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: 'var(--accent)', fontSize: '0.88rem' }}>▶️ {ytConn.connection.channelTitle}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{formatNum(ytConn.connection.subscriberCount)} subscribers</div>
+              </div>
+              <button className="btn btn-secondary" style={{ fontSize: '0.72rem', padding: '4px 12px', color: 'var(--red)' }} onClick={ytConn.disconnect}>Disconnect</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button className="btn btn-secondary" style={{ fontSize: '0.82rem', padding: '7px 16px' }} onClick={ytConn.connect} disabled={ytConn.connecting || !ytConn.oauthConfigured}>
+                {ytConn.connecting ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Đang kết nối...</> : '🔗 Connect YouTube Channel'}
+              </button>
+              {!ytConn.oauthConfigured && (
+                <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>⚠️ Server chưa cấu hình OAuth</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: 16 }}>

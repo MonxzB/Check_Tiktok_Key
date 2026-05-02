@@ -11,6 +11,7 @@ const TABS: TabDefinition[] = [
   { id: 'youtube',     label: '▶️ YouTube Research' },
   { id: 'csv',         label: '📁 CSV / History' },
   { id: 'competitors', label: '👥 Competitors' },
+  { id: 'gap',         label: '🎯 Gap Analysis' },
   { id: 'settings',   label: '⚙️ Cài đặt' },
 ];
 
