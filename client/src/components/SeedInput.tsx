@@ -8,30 +8,21 @@ interface SeedInputProps {
 }
 
 export default function SeedInput({ onExpand, activeWorkspace }: SeedInputProps) {
-  const [seedText, setSeedText] = useState('');
+  const [seedText,   setSeedText]   = useState('');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
 
-  const lang = activeWorkspace?.contentLanguage ?? 'ja';
-  const pack = getLanguagePack(lang);
+  const lang    = activeWorkspace?.contentLanguage ?? 'ja';
+  const pack    = getLanguagePack(lang);
   const langOpt = LANGUAGE_OPTIONS.find(o => o.code === lang);
-  const seeds = pack.defaultSeeds;
+  const seeds   = pack.defaultSeeds;
 
-  // Reset active tags when language changes
-  useEffect(() => {
-    setActiveTags(new Set());
-    setSeedText('');
-  }, [lang]);
+  useEffect(() => { setActiveTags(new Set()); setSeedText(''); }, [lang]);
 
   function toggleTag(text: string) {
     const newActive = new Set(activeTags);
     const lines = new Set(seedText.split('\n').map(l => l.trim()).filter(Boolean));
-    if (newActive.has(text)) {
-      newActive.delete(text);
-      lines.delete(text);
-    } else {
-      newActive.add(text);
-      lines.add(text);
-    }
+    if (newActive.has(text)) { newActive.delete(text); lines.delete(text); }
+    else { newActive.add(text); lines.add(text); }
     setActiveTags(newActive);
     setSeedText([...lines].join('\n'));
   }
@@ -55,49 +46,38 @@ export default function SeedInput({ onExpand, activeWorkspace }: SeedInputProps)
       <h2>
         <span className="icon">🌱</span> Nhập Seed Keyword (Long-form)
         {langOpt && (
-          <span style={{
-            marginLeft: 10, fontSize: '0.78rem', fontWeight: 500,
-            background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.2)',
-            padding: '2px 10px', borderRadius: 20, color: 'var(--accent)',
-          }}>
+          <span className="ml-2.5 text-[0.78rem] font-medium px-2.5 py-0.5 rounded-full text-accent"
+            style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.2)' }}>
             {langOpt.flag} {langOpt.name}
           </span>
         )}
       </h2>
       <div className="seed-area">
         <div>
-          <textarea
-            value={seedText}
-            onChange={e => setSeedText(e.target.value)}
-            placeholder={placeholders[lang] ?? placeholders.ja}
-            rows={6}
-          />
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
+          <textarea value={seedText} onChange={e => setSeedText(e.target.value)}
+            placeholder={placeholders[lang] ?? placeholders.ja} rows={6} />
+          <p className="text-[0.75rem] text-text-muted mt-1.5">
             Mỗi keyword sẽ được mở rộng thành nhiều biến thể long-form phù hợp YouTube.
           </p>
         </div>
         <div className="seed-library">
-          <h3>
-            📚 Seed mặc định ({langOpt?.flag} {langOpt?.name})
-          </h3>
+          <h3>📚 Seed mặc định ({langOpt?.flag} {langOpt?.name})</h3>
           <div className="seed-tags">
             {seeds.map(s => (
-              <span
-                key={s.text}
+              <span key={s.text}
                 className={`seed-tag ${activeTags.has(s.text) ? 'active' : ''}`}
                 title={`${s.vi} — ${s.niche}`}
-                onClick={() => toggleTag(s.text)}
-              >
+                onClick={() => toggleTag(s.text)}>
                 {s.text}
               </span>
             ))}
           </div>
-          <button className="btn btn-secondary" style={{ marginTop: 8, fontSize: '0.8rem' }} onClick={addAllSeeds}>
+          <button className="btn btn-secondary mt-2 text-[0.8rem]" onClick={addAllSeeds}>
             ＋ Thêm tất cả seed
           </button>
         </div>
       </div>
-      <div style={{ marginTop: 16 }}>
+      <div className="mt-4">
         <button className="btn btn-primary" onClick={() => onExpand(seedText)}>
           🔀 Tạo key long-form
         </button>

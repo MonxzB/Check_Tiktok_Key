@@ -1,5 +1,5 @@
 // ============================================================
-// components/EmptyState.tsx — Phase 16.6: Empty States with CTAs
+// components/EmptyState.tsx — Phase 16.6 (Tailwind)
 // ============================================================
 import React from 'react';
 
@@ -7,29 +7,19 @@ interface EmptyStateProps {
   icon?: string;
   title: string;
   description?: string;
-  actions?: Array<{
-    label: string;
-    onClick: () => void;
-    variant?: 'primary' | 'secondary';
-    icon?: string;
-  }>;
+  actions?: Array<{ label: string; onClick: () => void; variant?: 'primary' | 'secondary'; icon?: string; }>;
   compact?: boolean;
 }
 
 export default function EmptyState({ icon, title, description, actions, compact }: EmptyStateProps) {
   if (compact) {
     return (
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        textAlign: 'center', padding: '32px 16px',
-        color: 'var(--text-muted)', fontSize: '0.85rem',
-        animation: 'fadeIn 0.3s ease',
-      }}>
-        {icon && <div style={{ fontSize: '1.8rem', marginBottom: 8, opacity: 0.6 }}>{icon}</div>}
-        <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{title}</div>
-        {description && <div style={{ fontSize: '0.78rem', maxWidth: 320, lineHeight: 1.5 }}>{description}</div>}
+      <div className="flex flex-col items-center text-center px-4 py-8 text-text-muted text-sm animate-fade-in">
+        {icon && <div className="text-3xl mb-2 opacity-60">{icon}</div>}
+        <div className="font-semibold text-text-base mb-1">{title}</div>
+        {description && <div className="text-[0.78rem] max-w-xs leading-relaxed">{description}</div>}
         {actions && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className="flex gap-2 mt-3 flex-wrap justify-center">
             {actions.map(a => (
               <button
                 key={a.label}
@@ -47,12 +37,15 @@ export default function EmptyState({ icon, title, description, actions, compact 
   }
 
   return (
-    <div className="empty-state">
-      {icon && <div className="empty-state__icon">{icon}</div>}
-      <div className="empty-state__title">{title}</div>
-      {description && <p className="empty-state__desc">{description}</p>}
+    <div className="flex flex-col items-center justify-center text-center px-6 py-16 my-6 rounded-xl animate-fade-in"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.08)' }}>
+      {icon && <div className="text-5xl mb-4 opacity-80">{icon}</div>}
+      <div className="text-lg font-semibold mb-2 text-text-base">{title}</div>
+      {description && (
+        <p className="text-sm text-text-muted max-w-md leading-relaxed mb-5">{description}</p>
+      )}
       {actions && (
-        <div className="empty-state__actions">
+        <div className="flex gap-2.5 flex-wrap justify-center">
           {actions.map(a => (
             <button
               key={a.label}
@@ -72,8 +65,7 @@ export default function EmptyState({ icon, title, description, actions, compact 
 export function NoKeywordsEmptyState({ onExpand }: { onExpand?: () => void }) {
   return (
     <EmptyState
-      icon="🌱"
-      title="Chưa có keyword nào"
+      icon="🌱" title="Chưa có keyword nào"
       description="Nhập seed keyword ở trên và nhấn 'Tạo key long-form' để hệ thống tự động mở rộng thành nhiều biến thể."
       actions={onExpand ? [{ label: 'Xem seed mặc định', onClick: onExpand, variant: 'primary', icon: '✨' }] : undefined}
     />
@@ -83,8 +75,7 @@ export function NoKeywordsEmptyState({ onExpand }: { onExpand?: () => void }) {
 export function NoYoutubeDataEmptyState({ onAnalyze }: { onAnalyze?: () => void }) {
   return (
     <EmptyState
-      icon="📊"
-      title="Chưa có dữ liệu YouTube"
+      icon="📊" title="Chưa có dữ liệu YouTube"
       description="Phân tích keyword để xem dữ liệu view, kênh tham khảo, và cơ hội thị trường từ YouTube Data API."
       actions={onAnalyze ? [{ label: 'Phân tích ngay', onClick: onAnalyze, variant: 'primary', icon: '▶️' }] : undefined}
     />
@@ -94,8 +85,7 @@ export function NoYoutubeDataEmptyState({ onAnalyze }: { onAnalyze?: () => void 
 export function NoResultsFilterEmptyState({ onReset }: { onReset: () => void }) {
   return (
     <EmptyState
-      icon="🔍"
-      title="Không có keyword phù hợp"
+      icon="🔍" title="Không có keyword phù hợp"
       description="Thử nới lỏng bộ lọc hoặc đặt lại để xem tất cả keyword."
       actions={[{ label: 'Xóa bộ lọc', onClick: onReset, variant: 'secondary', icon: '↺' }]}
       compact
@@ -106,8 +96,7 @@ export function NoResultsFilterEmptyState({ onReset }: { onReset: () => void }) 
 export function NoWorkspaceEmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <EmptyState
-      icon="📁"
-      title="Chưa có workspace"
+      icon="📁" title="Chưa có workspace"
       description="Tạo workspace để tổ chức keyword theo chủ đề và thị trường."
       actions={[{ label: 'Tạo workspace đầu tiên', onClick: onCreate, variant: 'primary', icon: '✨' }]}
     />

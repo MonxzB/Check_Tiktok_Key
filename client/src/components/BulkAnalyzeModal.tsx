@@ -1,118 +1,107 @@
 import React, { useEffect } from 'react';
-import type { BulkAnalyzeState, BulkItem, UseBulkAnalyzeReturn } from '../hooks/useBulkAnalyze.ts';
-
-interface BulkAnalyzeModalProps {
-  bulk: UseBulkAnalyzeReturn;
-  onClose: () => void;
-}
+import type { BulkItem, UseBulkAnalyzeReturn } from '../hooks/useBulkAnalyze.ts';
 
 const STATUS_ICON: Record<BulkItem['status'], string> = {
-  pending: '⏸',
-  running: '⏳',
-  success: '✓',
-  failed:  '✗',
-  skipped: '—',
+  pending: '⏸', running: '⏳', success: '✓', failed: '✗', skipped: '—',
 };
 const STATUS_COLOR: Record<BulkItem['status'], string> = {
-  pending: 'var(--text-muted)',
-  running: 'var(--accent)',
-  success: 'var(--green)',
-  failed:  'var(--red)',
-  skipped: 'var(--text-muted)',
+  pending: '#5c6480', running: '#00e5ff', success: '#00e676', failed: '#ff1744', skipped: '#5c6480',
 };
 
-export default function BulkAnalyzeModal({ bulk, onClose }: BulkAnalyzeModalProps) {
+export default function BulkAnalyzeModal({ bulk, onClose }: { bulk: UseBulkAnalyzeReturn; onClose: () => void }) {
   const { state, pause, resume, cancel } = bulk;
   const { status, total, completed, failed, usedQuota, items } = state;
-
-  const pct     = total > 0 ? Math.round(((completed + failed) / total) * 100) : 0;
-  const estSecs = bulk.estimatedSeconds(total);
+  const pct      = total > 0 ? Math.round(((completed + failed) / total) * 100) : 0;
+  const estSecs  = bulk.estimatedSeconds(total);
   const estUnits = bulk.estimatedUnits(total);
+  const isDone   = status === 'completed' || status === 'cancelled';
 
-  // Close on Escape only when done/cancelled
   useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      if (e.key === 'Escape' && (status === 'completed' || status === 'cancelled')) onClose();
-    }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isDone) onClose();
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [status, onClose]);
+  }, [isDone, onClose]);
 
-  const isDone = status === 'completed' || status === 'cancelled';
+  const barBg = status === 'completed'
+    ? '#00e676'
+    : status === 'cancelled'
+    ? '#ff1744'
+    : 'linear-gradient(90deg,#00e5ff,#7c4dff)';
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(6px)' }}
+      className="fixed inset-0 z-[1100] flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
       onClick={isDone ? onClose : undefined}
     >
       <div
-        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)', borderRadius: 14, padding: '28px 32px', width: '100%', maxWidth: 520, boxShadow: '0 24px 80px rgba(0,0,0,0.6)', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        className="w-full rounded-2xl px-8 py-7 flex flex-col"
+        style={{
+          maxWidth: 520, maxHeight: '85vh',
+          background: '#0d1425',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: '1.1rem' }}>
-            📊 Phân tích {total} keyword
-          </h2>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 6, display: 'flex', gap: 16 }}>
-            <span>Quota ước tính: <strong style={{ color: 'var(--accent)' }}>{estUnits.toLocaleString()} / 10,000 units</strong></span>
+        <div className="mb-5">
+          <h2 className="text-lg font-bold m-0">📊 Phân tích {total} keyword</h2>
+          <div className="flex gap-4 text-[0.8rem] text-text-muted mt-1.5">
+            <span>Quota ước tính: <strong className="text-accent">{estUnits.toLocaleString()} / 10,000 units</strong></span>
             <span>⏱ ~{estSecs}s</span>
             <span>Rate: 1 req/2s</span>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.82rem' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>
-              {completed} thành công · {failed} thất bại · {usedQuota} units dùng
-            </span>
-            <span style={{ fontWeight: 700, color: pct === 100 ? 'var(--green)' : 'var(--accent)' }}>{pct}%</span>
+        <div className="mb-4">
+          <div className="flex justify-between mb-1.5 text-[0.82rem]">
+            <span className="text-text-secondary">{completed} thành công · {failed} thất bại · {usedQuota} units dùng</span>
+            <span className="font-bold" style={{ color: pct === 100 ? '#00e676' : '#00e5ff' }}>{pct}%</span>
           </div>
-          <div style={{ height: 10, background: 'rgba(255,255,255,0.06)', borderRadius: 99, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', borderRadius: 99,
-              background: status === 'completed' ? 'var(--green)' : status === 'cancelled' ? 'var(--red)' : 'linear-gradient(90deg,var(--accent),#7c4dff)',
-              width: `${pct}%`,
-              transition: 'width 0.4s ease',
-              boxShadow: status === 'running' ? '0 0 12px var(--accent)' : 'none',
-            }} />
+          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <div className="h-full rounded-full transition-all duration-300"
+              style={{ width: `${pct}%`, background: barBg, boxShadow: status === 'running' ? '0 0 12px #00e5ff' : 'none' }} />
           </div>
         </div>
 
-        {/* Status banner */}
+        {/* Status banners */}
         {status === 'paused' && (
-          <div style={{ padding: '8px 14px', background: 'rgba(255,167,38,0.1)', border: '1px solid rgba(255,167,38,0.3)', borderRadius: 8, fontSize: '0.82rem', color: '#ffa726', marginBottom: 12 }}>
+          <div className="px-3.5 py-2 rounded-lg text-[0.82rem] mb-3"
+            style={{ background: 'rgba(255,167,38,0.1)', border: '1px solid rgba(255,167,38,0.3)', color: '#ffa726' }}>
             ⏸ Đã tạm dừng — {total - completed - failed} keyword còn lại
           </div>
         )}
         {status === 'completed' && (
-          <div style={{ padding: '8px 14px', background: 'rgba(0,230,118,0.08)', border: '1px solid rgba(0,230,118,0.3)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--green)', marginBottom: 12 }}>
+          <div className="px-3.5 py-2 rounded-lg text-[0.82rem] mb-3"
+            style={{ background: 'rgba(0,230,118,0.08)', border: '1px solid rgba(0,230,118,0.3)', color: '#00e676' }}>
             ✅ Hoàn thành! {completed}/{total} thành công · {failed} thất bại
           </div>
         )}
 
         {/* Item list */}
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div className="flex-1 overflow-y-auto flex flex-col gap-1">
           {items.map(item => (
-            <div key={item.keyword} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '6px 10px', borderRadius: 8,
-              background: item.status === 'running' ? 'rgba(0,229,255,0.06)' : 'transparent',
-              border: item.status === 'running' ? '1px solid rgba(0,229,255,0.15)' : '1px solid transparent',
-              transition: 'all 0.2s',
-            }}>
-              <span style={{ color: STATUS_COLOR[item.status], fontWeight: 700, width: 16, textAlign: 'center', flexShrink: 0, fontSize: item.status === 'running' ? '1rem' : '0.9rem' }}>
+            <div key={item.keyword}
+              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all duration-200"
+              style={{
+                background: item.status === 'running' ? 'rgba(0,229,255,0.06)' : 'transparent',
+                border: item.status === 'running' ? '1px solid rgba(0,229,255,0.15)' : '1px solid transparent',
+              }}>
+              <span className="w-4 text-center shrink-0 font-bold text-[0.9rem]"
+                style={{ color: STATUS_COLOR[item.status] }}>
                 {STATUS_ICON[item.status]}
               </span>
-              <span className="jp-text" style={{ flex: 1, fontSize: '0.84rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: item.status === 'pending' ? 'var(--text-muted)' : 'var(--text)' }}>
+              <span className="jp-text flex-1 text-[0.84rem] truncate"
+                style={{ color: item.status === 'pending' ? '#5c6480' : '#e8eaf6' }}>
                 {item.keyword}
               </span>
-              {item.status === 'running' && (
-                <span className="spinner" style={{ width: 12, height: 12, flexShrink: 0 }} />
-              )}
+              {item.status === 'running' && <span className="spinner shrink-0" style={{ width: 12, height: 12 }} />}
               {item.status === 'failed' && item.error && (
-                <span style={{ fontSize: '0.72rem', color: 'var(--red)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.error}>
+                <span className="text-[0.72rem] max-w-[100px] truncate" style={{ color: '#ff1744' }} title={item.error}>
                   {item.error.slice(0, 30)}
                 </span>
               )}
@@ -121,21 +110,23 @@ export default function BulkAnalyzeModal({ bulk, onClose }: BulkAnalyzeModalProp
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20, borderTop: '1px solid var(--glass-border)', paddingTop: 16 }}>
+        <div className="flex gap-2.5 justify-end mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           {status === 'running' && (
-            <button className="btn btn-secondary" onClick={pause} style={{ padding: '7px 18px' }}>⏸ Tạm dừng</button>
+            <button className="btn btn-secondary" style={{ padding: '7px 18px' }} onClick={pause}>⏸ Tạm dừng</button>
           )}
           {status === 'paused' && (
             <>
-              <button className="btn btn-secondary" onClick={() => { cancel(); onClose(); }} style={{ padding: '7px 18px', color: 'var(--red)' }}>🗑 Hủy bỏ</button>
-              <button className="btn btn-primary" onClick={resume} style={{ padding: '7px 18px' }}>▶️ Tiếp tục</button>
+              <button className="btn btn-secondary" style={{ padding: '7px 18px', color: '#ff1744' }}
+                onClick={() => { cancel(); onClose(); }}>🗑 Hủy bỏ</button>
+              <button className="btn btn-primary" style={{ padding: '7px 18px' }} onClick={resume}>▶️ Tiếp tục</button>
             </>
           )}
-          {(status === 'running') && (
-            <button className="btn btn-secondary" onClick={() => { cancel(); }} style={{ padding: '7px 18px', color: 'var(--red)' }}>✗ Hủy</button>
+          {status === 'running' && (
+            <button className="btn btn-secondary" style={{ padding: '7px 18px', color: '#ff1744' }}
+              onClick={() => cancel()}>✗ Hủy</button>
           )}
           {isDone && (
-            <button className="btn btn-primary" onClick={onClose} style={{ padding: '7px 24px' }}>Đóng</button>
+            <button className="btn btn-primary" style={{ padding: '7px 24px' }} onClick={onClose}>Đóng</button>
           )}
         </div>
       </div>

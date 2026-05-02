@@ -1,42 +1,46 @@
 // ============================================================
-// components/Skeleton.tsx — Phase 16.5: Skeleton Loading States
+// components/Skeleton.tsx — Phase 16.5 (Tailwind)
 // ============================================================
 import React from 'react';
 
-// ── Base shimmer ───────────────────────────────────────────────
-const shimmerStyle: React.CSSProperties = {
-  background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%)',
-  backgroundSize: '200% 100%',
-  animation: 'shimmer 1.5s infinite',
-  borderRadius: 6,
-};
-
-function Bone({ w, h, style }: { w?: string | number; h?: number; style?: React.CSSProperties }) {
+// ── Base shimmer bone ──────────────────────────────────────────
+function Bone({
+  w = '100%',
+  h = 14,
+  className = '',
+  style,
+}: {
+  w?: string | number;
+  h?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <div style={{ ...shimmerStyle, width: w ?? '100%', height: h ?? 14, ...style }} />
+    <div
+      className={`rounded-md animate-shimmer ${className}`}
+      style={{
+        width: w,
+        height: h,
+        background: 'linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.09) 50%,rgba(255,255,255,0.04) 75%)',
+        backgroundSize: '200% 100%',
+        ...style,
+      }}
+    />
   );
 }
 
 // ── Keyword Table Skeleton ─────────────────────────────────────
 export function KeywordTableSkeleton({ rows = 8 }: { rows?: number }) {
   return (
-    <div style={{ marginTop: 16 }}>
-      {/* Header row */}
-      <div style={{ display: 'flex', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--glass-border)', marginBottom: 4 }}>
-        <Bone w="3%" h={12} />
-        <Bone w="30%" h={12} />
-        <Bone w="10%" h={12} />
-        <Bone w="10%" h={12} />
-        <Bone w="8%" h={12} />
-        <Bone w="8%" h={12} />
-        <Bone w="15%" h={12} />
+    <div className="mt-4">
+      {/* Header */}
+      <div className="flex gap-2.5 py-2.5 mb-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <Bone w="3%" h={12} /> <Bone w="30%" h={12} /> <Bone w="10%" h={12} />
+        <Bone w="10%" h={12} /> <Bone w="8%" h={12} /> <Bone w="8%" h={12} /> <Bone w="15%" h={12} />
       </div>
-      {/* Data rows */}
+      {/* Rows */}
       {Array.from({ length: rows }).map((_, i) => (
-        <div
-          key={i}
-          style={{ display: 'flex', gap: 10, padding: '11px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center' }}
-        >
+        <div key={i} className="flex gap-2.5 py-2.5 items-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <Bone w="3%" h={12} style={{ borderRadius: 3 }} />
           <Bone w={`${24 + (i % 3) * 8}%`} h={13} />
           <Bone w="10%" h={20} style={{ borderRadius: 10 }} />
@@ -53,10 +57,11 @@ export function KeywordTableSkeleton({ rows = 8 }: { rows?: number }) {
 // ── Stats Bar Skeleton ─────────────────────────────────────────
 export function StatsBarSkeleton() {
   return (
-    <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-      {[120, 90, 110, 80].map((w, i) => (
-        <div key={i} style={{ flex: 1, padding: 12, background: 'var(--glass)', borderRadius: 10, border: '1px solid var(--glass-border)' }}>
-          <Bone w="60%" h={10} style={{ marginBottom: 8 }} />
+    <div className="flex gap-3 mb-3">
+      {[0, 1, 2, 3].map(i => (
+        <div key={i} className="flex-1 p-3 rounded-[10px]"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Bone w="60%" h={10} className="mb-2" />
           <Bone w="40%" h={20} />
         </div>
       ))}
@@ -67,9 +72,9 @@ export function StatsBarSkeleton() {
 // ── Generic Card Skeleton ──────────────────────────────────────
 export function CardSkeleton({ lines = 3 }: { lines?: number }) {
   return (
-    <div style={{ padding: 16, background: 'var(--glass)', borderRadius: 12, border: '1px solid var(--glass-border)' }}>
+    <div className="p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
       {Array.from({ length: lines }).map((_, i) => (
-        <Bone key={i} w={i === 0 ? '60%' : `${85 - i * 10}%`} h={i === 0 ? 16 : 12} style={{ marginBottom: 10 }} />
+        <Bone key={i} w={i === 0 ? '60%' : `${85 - i * 10}%`} h={i === 0 ? 16 : 12} className="mb-2.5" />
       ))}
     </div>
   );
@@ -80,10 +85,9 @@ export function VideoTableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div>
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center' }}>
-          {/* Thumbnail placeholder */}
+        <div key={i} className="flex gap-3 py-3 items-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <Bone w={80} h={45} style={{ borderRadius: 6, flexShrink: 0 }} />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="flex-1 flex flex-col gap-1.5">
             <Bone w={`${60 + (i % 3) * 12}%`} h={13} />
             <Bone w="40%" h={10} />
           </div>

@@ -17,12 +17,11 @@ interface WorkspaceSwitcherProps {
 export default function WorkspaceSwitcher({
   workspaces, activeWorkspace, loading, onCreate, onSwitch, onUpdate, onDelete,
 }: WorkspaceSwitcherProps) {
-  const [open, setOpen]           = useState(false);
+  const [open,       setOpen]       = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<Workspace | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -38,12 +37,7 @@ export default function WorkspaceSwitcher({
 
   async function handleUpdate(data: Omit<WorkspaceInsert, 'user_id'>) {
     if (!editTarget) return;
-    await onUpdate(editTarget.id, {
-      name: data.name,
-      description: data.description,
-      niche: data.niche as import('../types').Niche | undefined,
-      color: data.color,
-    });
+    await onUpdate(editTarget.id, { name: data.name, description: data.description, niche: data.niche as import('../types').Niche | undefined, color: data.color });
   }
 
   async function handleDelete(ws: Workspace, e: React.MouseEvent) {
@@ -54,107 +48,92 @@ export default function WorkspaceSwitcher({
   }
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-      <span className="spinner" style={{ width: 12, height: 12 }} />
-      Đang tải...
+    <div className="flex items-center gap-1.5 text-[0.8rem] text-text-muted">
+      <span className="spinner" style={{ width: 12, height: 12 }} /> Đang tải...
     </div>
   );
 
+  const langFlag = (code: string) => LANGUAGE_OPTIONS.find(o => o.code === code)?.flag;
+
   return (
     <>
-      <div ref={ref} style={{ position: 'relative' }}>
-        {/* Trigger button */}
+      <div ref={ref} className="relative">
+        {/* Trigger */}
         <button
           onClick={() => setOpen(o => !o)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px',
-            background: 'var(--glass)', border: '1px solid var(--glass-border)',
-            borderRadius: 8, cursor: 'pointer', color: 'var(--text)',
-            fontSize: '0.83rem', fontWeight: 500, transition: 'all 0.15s',
-          }}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-[0.83rem] font-medium transition-all duration-150"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#e8eaf6' }}
         >
-          {/* Color dot */}
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: activeWorkspace?.color ?? '#00e5ff', flexShrink: 0 }} />
-          <span style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {activeWorkspace?.name ?? 'Chọn workspace'}
-          </span>
-          {/* Language flag */}
+          <span className="rounded-full shrink-0" style={{ width: 10, height: 10, background: activeWorkspace?.color ?? '#00e5ff' }} />
+          <span className="max-w-[140px] truncate">{activeWorkspace?.name ?? 'Chọn workspace'}</span>
           {activeWorkspace?.contentLanguage && (
-            <span style={{ fontSize: '0.85rem', flexShrink: 0 }}>
-              {LANGUAGE_OPTIONS.find(o => o.code === activeWorkspace.contentLanguage)?.flag}
-            </span>
+            <span className="text-[0.85rem] shrink-0">{langFlag(activeWorkspace.contentLanguage)}</span>
           )}
           {activeWorkspace?.niche && (
-            <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', padding: '1px 6px', borderRadius: 8, color: 'var(--text-muted)', flexShrink: 0 }}>
+            <span className="text-[0.7rem] px-1.5 py-px rounded-full shrink-0 text-text-muted"
+              style={{ background: 'rgba(255,255,255,0.08)' }}>
               {activeWorkspace.niche}
             </span>
           )}
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{open ? '▲' : '▼'}</span>
+          <span className="text-text-muted text-[0.75rem]">{open ? '▲' : '▼'}</span>
         </button>
 
         {/* Dropdown */}
         {open && (
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 500,
-            background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)',
-            borderRadius: 10, minWidth: 240, maxWidth: 300,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.5)', overflow: 'hidden',
-          }}>
+          <div className="absolute top-full mt-1.5 left-0 z-[500] rounded-[10px] overflow-hidden min-w-[240px] max-w-[300px]"
+            style={{ background: '#0d1425', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+
             {/* Workspace list */}
-            <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-              {workspaces.map(ws => (
-                <div
-                  key={ws.id}
-                  onClick={() => { onSwitch(ws.id); setOpen(false); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                    cursor: 'pointer', borderBottom: '1px solid var(--glass-border)',
-                    background: activeWorkspace?.id === ws.id ? 'rgba(0,229,255,0.08)' : 'transparent',
-                    transition: 'background 0.12s',
-                  }}
-                  onMouseEnter={e => { if (activeWorkspace?.id !== ws.id) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = activeWorkspace?.id === ws.id ? 'rgba(0,229,255,0.08)' : 'transparent'; }}
-                >
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: ws.color, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      {ws.name}
-                      {ws.contentLanguage && (
-                        <span style={{ fontSize: '0.8rem' }} title={LANGUAGE_OPTIONS.find(o => o.code === ws.contentLanguage)?.name}>
-                          {LANGUAGE_OPTIONS.find(o => o.code === ws.contentLanguage)?.flag}
-                        </span>
+            <div className="max-h-[280px] overflow-y-auto">
+              {workspaces.map(ws => {
+                const isActive = activeWorkspace?.id === ws.id;
+                return (
+                  <div key={ws.id}
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 cursor-pointer transition-colors duration-100"
+                    style={{
+                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      background: isActive ? 'rgba(0,229,255,0.08)' : 'transparent',
+                    }}
+                    onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isActive ? 'rgba(0,229,255,0.08)' : 'transparent'; }}
+                    onClick={() => { onSwitch(ws.id); setOpen(false); }}
+                  >
+                    <span className="rounded-full shrink-0" style={{ width: 10, height: 10, background: ws.color }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[0.86rem] font-semibold truncate">
+                        {ws.name}
+                        {ws.contentLanguage && (
+                          <span className="text-[0.8rem]" title={LANGUAGE_OPTIONS.find(o => o.code === ws.contentLanguage)?.name}>
+                            {langFlag(ws.contentLanguage)}
+                          </span>
+                        )}
+                      </div>
+                      {ws.niche && <div className="text-[0.72rem] text-text-muted">{ws.niche}</div>}
+                    </div>
+                    {isActive && <span className="text-accent text-[0.78rem]">✓</span>}
+                    <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                      <button
+                        className="bg-transparent border-none cursor-pointer text-text-muted text-[0.8rem] px-1 py-0.5 rounded transition-colors hover:text-accent"
+                        onClick={e => { e.stopPropagation(); setEditTarget(ws); setOpen(false); }}
+                        title="Chỉnh sửa">✏️</button>
+                      {!ws.isDefault && (
+                        <button
+                          className="bg-transparent border-none cursor-pointer text-[0.8rem] px-1 py-0.5 rounded"
+                          style={{ color: '#ff1744' }}
+                          onClick={e => handleDelete(ws, e)}
+                          title="Xóa workspace">🗑️</button>
                       )}
                     </div>
-                    {ws.niche && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{ws.niche}</div>}
                   </div>
-                  {activeWorkspace?.id === ws.id && <span style={{ color: 'var(--accent)', fontSize: '0.78rem' }}>✓</span>}
-                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                    <button
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.8rem', padding: '2px 4px', borderRadius: 4 }}
-                      onClick={e => { e.stopPropagation(); setEditTarget(ws); setOpen(false); }}
-                      title="Chỉnh sửa"
-                    >✏️</button>
-                    {!ws.isDefault && (
-                      <button
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: '0.8rem', padding: '2px 4px', borderRadius: 4 }}
-                        onClick={e => handleDelete(ws, e)}
-                        title="Xóa workspace"
-                      >🗑️</button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Create new */}
             <button
               onClick={() => { setShowCreate(true); setOpen(false); }}
-              style={{
-                width: '100%', padding: '10px 14px', background: 'rgba(0,229,255,0.06)',
-                border: 'none', borderTop: '1px solid var(--glass-border)',
-                color: 'var(--accent)', cursor: 'pointer', fontSize: '0.84rem',
-                fontWeight: 600, textAlign: 'left', transition: 'background 0.12s',
-              }}
+              className="w-full px-3.5 py-2.5 border-0 cursor-pointer text-[0.84rem] font-semibold text-left text-accent transition-colors duration-100 hover:opacity-80"
+              style={{ background: 'rgba(0,229,255,0.06)', borderTop: '1px solid rgba(255,255,255,0.08)' }}
             >
               ＋ Tạo workspace mới
             </button>
@@ -162,21 +141,11 @@ export default function WorkspaceSwitcher({
         )}
       </div>
 
-      {/* Modals */}
       {showCreate && (
-        <WorkspaceModal
-          mode="create"
-          onSave={handleCreate}
-          onClose={() => setShowCreate(false)}
-        />
+        <WorkspaceModal mode="create" onSave={handleCreate} onClose={() => setShowCreate(false)} />
       )}
       {editTarget && (
-        <WorkspaceModal
-          mode="edit"
-          initial={editTarget}
-          onSave={handleUpdate}
-          onClose={() => setEditTarget(null)}
-        />
+        <WorkspaceModal mode="edit" initial={editTarget} onSave={handleUpdate} onClose={() => setEditTarget(null)} />
       )}
     </>
   );

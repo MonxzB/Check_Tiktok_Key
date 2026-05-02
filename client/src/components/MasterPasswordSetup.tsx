@@ -1,13 +1,13 @@
 // ============================================================
 // components/MasterPasswordSetup.tsx — First-time vault setup
-// Phase 18: TikTok Channel Manager
+// Phase 18: TikTok Channel Manager (Tailwind)
 // ============================================================
 import React, { useState } from 'react';
 
 interface Props {
   userId: string;
   onSetup: (masterPassword: string, userId: string) => Promise<void>;
-  onSkip?: () => void; // optional skip to Supabase Vault mode (future)
+  onSkip?: () => void;
 }
 
 export default function MasterPasswordSetup({ userId, onSetup, onSkip }: Props) {
@@ -23,45 +23,38 @@ export default function MasterPasswordSetup({ userId, onSetup, onSkip }: Props) 
     if (pw.length < 8) { setError('Mật khẩu phải có ít nhất 8 ký tự.'); return; }
     if (pw !== pwConf)  { setError('Mật khẩu xác nhận không khớp.'); return; }
     setBusy(true);
-    try {
-      await onSetup(pw, userId);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
+    try { await onSetup(pw, userId); }
+    catch (err) { setError((err as Error).message); }
+    finally { setBusy(false); }
   }
 
+  const strength = pw.length < 8 ? 'Yếu' : pw.length < 12 ? 'Trung bình' : pw.length < 16 ? 'Mạnh' : 'Rất mạnh';
+
   return (
-    <div style={{ maxWidth: 460, margin: '0 auto', padding: '32px 24px' }}>
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div style={{ fontSize: '2.8rem', marginBottom: 12 }}>🔐</div>
-        <h2 style={{ margin: '0 0 8px', fontSize: '1.2rem', fontWeight: 700 }}>
-          Thiết lập Master Password
-        </h2>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
+    <div className="max-w-[460px] mx-auto px-6 py-8">
+      {/* Header */}
+      <div className="text-center mb-7">
+        <div className="text-5xl mb-3">🔐</div>
+        <h2 className="text-xl font-bold mb-2">Thiết lập Master Password</h2>
+        <p className="text-sm leading-relaxed text-text-muted">
           Master Password dùng để mã hóa tất cả credentials (password, token, cookie) của các channel TikTok.
           <br />
           <strong>Quan trọng:</strong> Nếu quên, credentials sẽ không thể khôi phục (zero-knowledge).
         </p>
       </div>
 
-      <div style={{
-        background: 'rgba(245,158,11,0.08)',
-        border: '1px solid rgba(245,158,11,0.3)',
-        borderRadius: 10, padding: '12px 16px', marginBottom: 24,
-        fontSize: '0.82rem', color: 'var(--text-secondary)',
-      }}>
+      {/* Warning box */}
+      <div className="rounded-[10px] px-4 py-3 mb-6 text-sm text-text-secondary"
+        style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)' }}>
         ⚠️ <strong>Lưu ý bảo mật:</strong> Master Password KHÔNG lưu ở bất kỳ đâu.
         Mỗi phiên làm việc bạn sẽ cần nhập lại (sau khi đóng tab hoặc 15 phút không hoạt động).
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        {/* Password field */}
         <div>
-          <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 600, marginBottom: 6 }}>
-            Master Password
-          </label>
-          <div style={{ position: 'relative' }}>
+          <label className="block text-[0.83rem] font-semibold mb-1.5">Master Password</label>
+          <div className="relative">
             <input
               type={show ? 'text' : 'password'}
               value={pw}
@@ -69,43 +62,32 @@ export default function MasterPasswordSetup({ userId, onSetup, onSkip }: Props) 
               placeholder="Tối thiểu 8 ký tự"
               autoComplete="new-password"
               required
-              style={{ width: '100%', paddingRight: 40 }}
+              className="w-full box-border pr-10"
             />
-            <button
-              type="button"
-              onClick={() => setShow(s => !s)}
-              style={{
-                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem',
-                color: 'var(--text-muted)',
-              }}
-            >
+            <button type="button" onClick={() => setShow(s => !s)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-base text-text-muted p-0">
               {show ? '🙈' : '👁️'}
             </button>
           </div>
-          {/* Strength indicator */}
+          {/* Strength bar */}
           {pw && (
-            <div style={{ marginTop: 6, display: 'flex', gap: 4 }}>
+            <div className="mt-1.5 flex items-center gap-1">
               {[8, 12, 16].map(threshold => (
-                <div key={threshold} style={{
-                  flex: 1, height: 3, borderRadius: 2,
-                  background: pw.length >= threshold
-                    ? threshold === 8 ? '#f59e0b' : threshold === 12 ? '#22c55e' : '#3b82f6'
-                    : 'var(--bg-elevated)',
-                  transition: 'background 0.2s',
-                }} />
+                <div key={threshold} className="flex-1 h-[3px] rounded-sm transition-colors duration-200"
+                  style={{
+                    background: pw.length >= threshold
+                      ? threshold === 8 ? '#f59e0b' : threshold === 12 ? '#22c55e' : '#3b82f6'
+                      : 'rgba(255,255,255,0.06)',
+                  }} />
               ))}
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 4 }}>
-                {pw.length < 8 ? 'Yếu' : pw.length < 12 ? 'Trung bình' : pw.length < 16 ? 'Mạnh' : 'Rất mạnh'}
-              </span>
+              <span className="text-[0.7rem] text-text-muted ml-1">{strength}</span>
             </div>
           )}
         </div>
 
+        {/* Confirm field */}
         <div>
-          <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 600, marginBottom: 6 }}>
-            Xác nhận Master Password
-          </label>
+          <label className="block text-[0.83rem] font-semibold mb-1.5">Xác nhận Master Password</label>
           <input
             type={show ? 'text' : 'password'}
             value={pwConf}
@@ -113,28 +95,20 @@ export default function MasterPasswordSetup({ userId, onSetup, onSkip }: Props) 
             placeholder="Nhập lại mật khẩu"
             autoComplete="new-password"
             required
+            className="w-full box-border"
           />
         </div>
 
-        {error && (
-          <p style={{ margin: 0, fontSize: '0.82rem', color: '#ef4444', fontWeight: 500 }}>
-            ❌ {error}
-          </p>
-        )}
+        {error && <p className="m-0 text-[0.82rem] text-red-400 font-medium">❌ {error}</p>}
 
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={busy}
-          style={{ marginTop: 4, padding: '10px', fontWeight: 700 }}
-        >
+        <button type="submit" className="btn btn-primary mt-1 py-2.5 font-bold justify-center w-full" disabled={busy}>
           {busy ? '⏳ Đang xử lý…' : '🔐 Thiết lập Vault'}
         </button>
       </form>
 
       {onSkip && (
-        <div style={{ marginTop: 20, textAlign: 'center' }}>
-          <button className="btn" onClick={onSkip} style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+        <div className="mt-5 text-center">
+          <button className="btn text-[0.78rem] text-text-muted" onClick={onSkip}>
             Bỏ qua (sẽ dùng Supabase Vault, không zero-knowledge)
           </button>
         </div>

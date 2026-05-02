@@ -9,30 +9,17 @@ interface CsvHistoryTabProps {
   refChannels: RefChannel[];
   onImport: (text: string) => void;
   toast: ToastFn;
-  /** Task 2.5: Whether personal scoring is active — determines CSV column values */
   personalScoringEnabled?: boolean;
-}
-
-interface ExportCard {
-  title: string;
-  desc: string;
-  count: number;
-  onClick: () => void;
-  filename: string;
 }
 
 export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImport, toast, personalScoringEnabled = false }: CsvHistoryTabProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => {
-      if (ev.target?.result) onImport(ev.target.result as string);
-    };
-    reader.readAsText(file, 'utf-8');
-    e.target.value = '';
+    reader.onload = ev => { if (ev.target?.result) onImport(ev.target.result as string); };
+    reader.readAsText(file, 'utf-8'); e.target.value = '';
   }
 
   function handleExportKeywords() {
@@ -54,10 +41,10 @@ export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImpo
   const scored   = keywords.filter(k => k.longFormScore > 0);
   const withData = keywords.filter(k => (k.apiData?.longVideosFound ?? 0) > 0);
 
-  const exportCards: ExportCard[] = [
+  const exportCards = [
     { title: 'Keywords Long-Form', desc: `${keywords.length} keywords với đầy đủ điểm số, chapters, metadata`, count: keywords.length, onClick: handleExportKeywords, filename: 'youtube_longform_keywords.csv' },
-    { title: 'Reference Videos',   desc: `${refVideos.length} video tham khảo với thời lượng, views, fit score`, count: refVideos.length, onClick: handleExportVideos, filename: 'youtube_ref_videos.csv' },
-    { title: 'Reference Channels', desc: `${refChannels.length} kênh tham khảo với subscribers, fit score`, count: refChannels.length, onClick: handleExportChannels, filename: 'youtube_ref_channels.csv' },
+    { title: 'Reference Videos',   desc: `${refVideos.length} video tham khảo với thời lượng, views, fit score`,  count: refVideos.length,   onClick: handleExportVideos,   filename: 'youtube_ref_videos.csv'   },
+    { title: 'Reference Channels', desc: `${refChannels.length} kênh tham khảo với subscribers, fit score`,        count: refChannels.length, onClick: handleExportChannels, filename: 'youtube_ref_channels.csv' },
   ];
 
   return (
@@ -65,13 +52,13 @@ export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImpo
       <section className="card">
         <h2><span className="icon">📁</span> CSV / History</h2>
 
-        <div className="stats-bar" style={{ marginBottom: 24 }}>
+        <div className="stats-bar mb-6">
           {[
-            { label: '📋 Keywords:', val: keywords.length },
-            { label: '📊 Đã chấm điểm:', val: scored.length },
-            { label: '▶️ Đã có YT data:', val: withData.length },
-            { label: '🎬 Ref Videos:', val: refVideos.length },
-            { label: '📺 Ref Channels:', val: refChannels.length },
+            { label: '📋 Keywords:',      val: keywords.length  },
+            { label: '📊 Đã chấm điểm:', val: scored.length    },
+            { label: '▶️ Đã có YT data:', val: withData.length  },
+            { label: '🎬 Ref Videos:',    val: refVideos.length  },
+            { label: '📺 Ref Channels:',  val: refChannels.length },
           ].map(s => (
             <div key={s.label} className="stat-chip">
               <span>{s.label}</span>
@@ -82,12 +69,13 @@ export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImpo
 
         <div className="csv-section">
           <h3>📥 Xuất dữ liệu</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginTop: 12 }}>
+          <div className="grid gap-4 mt-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))' }}>
             {exportCards.map(item => (
-              <div key={item.title} style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-sm)', padding: 16 }}>
-                <div style={{ fontWeight: 600, marginBottom: 6 }}>{item.title}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>{item.desc}</div>
-                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={item.onClick} disabled={item.count === 0}>
+              <div key={item.title} className="rounded-lg p-4"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="font-semibold mb-1.5">{item.title}</div>
+                <div className="text-[0.8rem] text-text-secondary mb-3">{item.desc}</div>
+                <button className="btn btn-primary w-full justify-center" onClick={item.onClick} disabled={item.count === 0}>
                   📥 Xuất {item.filename}
                 </button>
               </div>
@@ -95,9 +83,9 @@ export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImpo
           </div>
         </div>
 
-        <div className="csv-section" style={{ marginTop: 24 }}>
+        <div className="csv-section mt-6">
           <h3>📤 Nhập dữ liệu từ CSV</h3>
-          <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+          <p className="text-[0.83rem] text-text-secondary mb-3">
             Nhập file CSV keywords đã xuất trước đó. Các keyword chưa có sẽ được thêm vào danh sách hiện tại.
           </p>
           <button className="btn btn-secondary" onClick={() => fileRef.current?.click()}>
@@ -106,9 +94,10 @@ export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImpo
           <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
         </div>
 
-        <div style={{ marginTop: 24, padding: '14px 16px', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.15)', borderRadius: 'var(--radius-sm)' }}>
-          <h3 style={{ fontSize: '0.9rem', marginBottom: 8, color: 'var(--accent)' }}>ℹ️ Về độ tươi dữ liệu</h3>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+        <div className="mt-6 px-4 py-3.5 rounded-lg"
+          style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.15)' }}>
+          <h3 className="text-[0.9rem] mb-2 text-accent">ℹ️ Về độ tươi dữ liệu</h3>
+          <div className="text-[0.8rem] text-text-secondary leading-relaxed">
             <div>🟢 <strong>Fresh</strong> — Thu thập trong vòng 7 ngày qua</div>
             <div>🔵 <strong>Recent</strong> — Thu thập trong vòng 30 ngày qua</div>
             <div>🟡 <strong>Stale</strong> — Thu thập từ 30–90 ngày trước</div>

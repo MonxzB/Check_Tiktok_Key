@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 
-interface ApiKeyModalProps {
-  onSave: (keys: string[]) => void;
-  onCancel: () => void;
-}
-
-export default function ApiKeyModal({ onSave, onCancel }: ApiKeyModalProps) {
+export default function ApiKeyModal({ onSave, onCancel }: { onSave: (keys: string[]) => void; onCancel: () => void }) {
   const [keyInput, setKeyInput] = useState('');
   const [error, setError] = useState('');
 
@@ -23,13 +18,15 @@ export default function ApiKeyModal({ onSave, onCancel }: ApiKeyModalProps) {
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
         <div className="modal-header">
-          <h2 style={{ fontSize: '1.1rem' }}>🔑 Thêm YouTube API Key</h2>
+          <h2 className="text-lg">🔑 Thêm YouTube API Key</h2>
           <button className="modal-close" onClick={onCancel}>×</button>
         </div>
 
-        <div style={{ padding: '20px 24px' }}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.7 }}>
+        {/* Body */}
+        <div className="px-6 py-5">
+          <p className="text-[0.85rem] text-text-secondary mb-3.5 leading-relaxed">
             Bạn chưa có API key. Nhập key bên dưới để bắt đầu phân tích.
             Mỗi dòng là 1 key — key hết quota sẽ tự động chuyển sang key tiếp theo.
           </p>
@@ -40,44 +37,38 @@ export default function ApiKeyModal({ onSave, onCancel }: ApiKeyModalProps) {
             placeholder={'AIzaSyAbCdEf... (key 1)\nAIzaSyXyZwVu... (key 2)'}
             rows={4}
             autoFocus
+            className="w-full box-border rounded-lg text-[0.85rem] font-mono leading-relaxed resize-y outline-none transition-colors duration-200"
             style={{
-              width: '100%', background: 'rgba(255,255,255,0.04)',
-              border: '1px solid var(--glass-border)', borderRadius: 8,
-              color: 'var(--text)', padding: '10px 14px', fontSize: '0.85rem',
-              fontFamily: 'monospace', resize: 'vertical', boxSizing: 'border-box',
-              lineHeight: 1.7, outline: 'none',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: '#e8eaf6',
+              padding: '10px 14px',
             }}
-            onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
-            onBlur={e => (e.target.style.borderColor = 'var(--glass-border)')}
+            onFocus={e => (e.target.style.borderColor = '#00e5ff')}
+            onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
           />
 
           {error && (
-            <div style={{
-              marginTop: 8, padding: '8px 12px', borderRadius: 6,
-              background: 'rgba(255,23,68,0.1)', border: '1px solid rgba(255,23,68,0.3)',
-              fontSize: '0.82rem', color: 'var(--red)',
-            }}>{error}</div>
+            <div className="mt-2 px-3 py-2 rounded-lg text-[0.82rem]"
+              style={{ background: 'rgba(255,23,68,0.1)', border: '1px solid rgba(255,23,68,0.3)', color: '#ff1744' }}>
+              {error}
+            </div>
           )}
 
-          <p style={{ marginTop: 10, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <p className="mt-2.5 text-[0.75rem] text-text-muted">
             💡 Lấy key miễn phí tại{' '}
-            <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer"
-              style={{ color: 'var(--accent)' }}>console.cloud.google.com</a>
+            <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-accent">
+              console.cloud.google.com
+            </a>
             {' '}→ YouTube Data API v3 → Credentials → Create API Key.
-            Quota: <strong style={{ color: 'var(--text)' }}>10,000 units/ngày</strong> miễn phí.
+            Quota: <strong className="text-text-base">10,000 units/ngày</strong> miễn phí.
           </p>
         </div>
 
-        <div style={{
-          display: 'flex', gap: 10, justifyContent: 'flex-end',
-          padding: '14px 24px', borderTop: '1px solid var(--glass-border)',
-        }}>
+        {/* Footer */}
+        <div className="flex gap-2.5 justify-end px-6 py-3.5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <button className="btn btn-secondary" onClick={onCancel}>Huỷ</button>
-          <button
-            className="btn btn-primary"
-            onClick={handleSave}
-            disabled={!keyInput.trim()}
-          >
+          <button className="btn btn-primary" onClick={handleSave} disabled={!keyInput.trim()}>
             💾 Lưu &amp; Phân tích
           </button>
         </div>
