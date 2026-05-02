@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import type { Keyword, KeywordFilters } from './types';
+import type { TiktokChannel } from './types';
 import Header from './components/Header.js';
 import Tabs from './components/Tabs.js';
 import SeedInput from './components/SeedInput.js';
@@ -39,12 +40,21 @@ import { wsKey } from './engine/storageKeys.ts';
 // Phase 13: Content Calendar — lazy to isolate any potential crashes
 import CalendarErrorBoundary from './components/CalendarErrorBoundary.tsx';
 const ContentCalendarTab = lazy(() => import('./components/ContentCalendarTab.tsx'));
+// Phase 17: Trending popup
+import TrendingKeywordsModal from './components/TrendingKeywordsModal.tsx';
+import { useTrendingKeywords } from './hooks/useTrendingKeywords.ts';
+import { canRefreshNow } from './engine/trendingFetcher.ts';
+// Phase 18: TikTok Channel Manager
+import TiktokChannelsTab from './components/TiktokChannelsTab.tsx';
+import TiktokChannelDetailModal from './components/TiktokChannelDetailModal.tsx';
+import { useMasterPassword } from './hooks/useMasterPassword.ts';
+import { useTiktokChannels } from './hooks/useTiktokChannels.ts';
 
 const DEFAULT_FILTERS: KeywordFilters = {
   minScore: 0, niche: '', level: '', intent: '', evergreen: '', risk: '', rec: '',
 };
 
-const VALID_TABS: TabId[] = ['keywords', 'youtube', 'csv', 'settings', 'competitors', 'gap', 'calendar'];
+const VALID_TABS: TabId[] = ['keywords', 'youtube', 'csv', 'settings', 'competitors', 'gap', 'calendar', 'tiktok'];
 
 export default function App() {
   // ── Auth + workspace MUST come first — other hooks depend on these IDs ──
@@ -83,7 +93,26 @@ export default function App() {
 
   const { refVideos, refChannels, loading: ytLoading, serverConfigured, lastKeyword, analyzeKeyword, exportVideosCsv, exportChannelsCsv, checkStatus } = useYoutube(toast, updateApiData, settings);
 
+  // Phase 17: Trending popup
+  const trending = useTrendingKeywords({
+    showTrendingOnLoad: settings.showTrendingOnLoad,
+    regionCode: settings.trendingRegionCode ?? settings.regionCode,
+    language: settings.languageCode,
+    apiKeys: settings.apiKeys,
+  });
+
+  // Phase 18: TikTok Channel Manager
+  const masterPw       = useMasterPassword();
+  const tiktokChannels = useTiktokChannels(user?.id ?? null, activeWorkspaceId);
+  const [selectedChannel, setSelectedChannel] = useState<TiktokChannel | null>(null);
+
   const hasResults = keywords.length > 0;
+
+  // ── Trending: check on mount after user+settings ready ────────
+  useEffect(() => {
+    if (user) trending.checkAndShow();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // ── Ensure default workspace on first login ───────────────────
   useEffect(() => {
@@ -171,7 +200,7 @@ export default function App() {
   return (
     <div className="container">
       <Header workspaceProps={workspaceProps} syncStatus={syncStatus} />
-      <Tabs activeTab={activeTab_} setActiveTab={setActiveTab} />
+      <Tabs activeTab={activeTab_} setActiveTab={setActiveTab} hideCalendar={settings.hideCalendar} />
 
       {/* Migration banner (one-time) */}
       {hasMigrationPending && activeWorkspaceId && (
@@ -308,6 +337,17 @@ export default function App() {
         </CalendarErrorBoundary>
       </div>
 
+      {/* TikTok Channels Tab — Phase 18 */}
+      <div style={{ display: is('tiktok') }}>
+        <TiktokChannelsTab
+          userId={user?.id ?? null}
+          workspaceId={activeWorkspaceId}
+          masterPw={masterPw}
+          tiktokChannels={tiktokChannels}
+          onSelectChannel={setSelectedChannel}
+        />
+      </div>
+
       {/* Settings Tab */}
       <div style={{ display: is('settings') }}>
         <SettingsPanel
@@ -319,6 +359,38 @@ export default function App() {
       </div>
 
       {selectedKw && <DetailModal kw={selectedKw} onClose={() => setSelectedKw(null)} onAnalyze={handleAnalyzeKeyword} snapshots={snapshots} personalScoring={personalScoring} refVideos={lastKeyword === selectedKw.keyword ? refVideos : []} />}
+
+      {/* TikTok Channel Detail Modal — Phase 18 */}
+      {selectedChannel && (
+        <TiktokChannelDetailModal
+          channel={selectedChannel}
+          vaultKey={masterPw.key}
+          userId={user?.id ?? ''}
+          tiktokChannels={tiktokChannels}
+          onClose={() => setSelectedChannel(null)}
+        />
+      )}
+
+      {/* Trending Popup — Phase 17 */}
+      <TrendingKeywordsModal
+        visible={trending.visible}
+        status={trending.status}
+        keywords={trending.keywords}
+        error={trending.error}
+        fromCache={trending.fromCache}
+        regionCode={settings.trendingRegionCode ?? settings.regionCode}
+        language={settings.languageCode}
+        canRefresh={canRefreshNow()}
+        onClose={trending.close}
+        onRefresh={trending.refresh}
+        onAddKeyword={kw => {
+          expand(kw.keyword);
+          toast(`➕ Đã thêm: ${kw.keyword}`, 'success');
+        }}
+        onAnalyzeKeyword={kw => { handleAnalyzeKeyword(kw); trending.close(); }}
+        onDisablePermanently={() => { updateSettings({ showTrendingOnLoad: false }); trending.close(); toast('Đã tắt trending popup', 'info'); }}
+      />
+
       <Toast toasts={toasts} />
     </div>
   );

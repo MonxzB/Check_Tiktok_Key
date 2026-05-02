@@ -7,6 +7,7 @@ import cors from 'cors';
 import youtubeRouter from './routes/youtube.js';
 import channelTrackerRouter from './routes/channelTracker.js';
 import oauthYoutubeRouter from './routes/oauthYoutube.js';
+import trendingRouter from './routes/trending.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
@@ -22,6 +23,7 @@ app.use(cors({
 app.use('/api/youtube', youtubeRouter);
 app.use('/api/youtube', channelTrackerRouter);
 app.use('/api/oauth/youtube', oauthYoutubeRouter);
+app.use('/api/trending', trendingRouter);
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({

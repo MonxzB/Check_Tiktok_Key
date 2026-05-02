@@ -9,6 +9,11 @@ const STORAGE_KEY = 'ytlf_settings';
 export interface ExtendedSettings extends UserSettings {
   cacheDays: number;
   activeKeyIndex: number;
+  // Phase 17: Trending popup
+  showTrendingOnLoad: boolean;
+  trendingRegionCode: RegionCode;
+  // Phase 18: TikTok Channel Manager
+  hideCalendar: boolean;
 }
 
 const DEFAULTS: ExtendedSettings = {
@@ -22,6 +27,11 @@ const DEFAULTS: ExtendedSettings = {
   orderBy: 'relevance' as OrderBy,
   apiKeys: [],
   activeKeyIndex: 0,
+  // Phase 17
+  showTrendingOnLoad: true,
+  trendingRegionCode: 'JP' as RegionCode,
+  // Phase 18
+  hideCalendar: false,
 };
 
 function load(): ExtendedSettings {

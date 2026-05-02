@@ -172,8 +172,8 @@ export interface AnalyzeResult {
 }
 
 // ── Settings ──────────────────────────────────────────────────
-export type RegionCode = 'JP' | 'US' | 'VN';
-export type LanguageCode = 'ja' | 'en' | 'vi';
+export type RegionCode = 'JP' | 'US' | 'VN' | 'KR' | 'GB' | 'AU';
+export type LanguageCode = 'ja' | 'en' | 'vi' | 'ko';
 export type OrderBy = 'relevance' | 'viewCount' | 'date';
 
 export interface UserSettings {
@@ -185,6 +185,11 @@ export interface UserSettings {
   regionCode: RegionCode;
   languageCode: LanguageCode;
   hideRisky: boolean;
+  // Phase 17: Trending popup
+  showTrendingOnLoad: boolean;
+  trendingRegionCode: RegionCode;
+  // Phase 18: TikTok tab
+  hideCalendar: boolean;
 }
 
 // ── Keyword Filters ───────────────────────────────────────────
@@ -209,7 +214,7 @@ export interface ToastItem {
 }
 
 // ── Tab IDs ───────────────────────────────────────────────────
-export type TabId = 'keywords' | 'youtube' | 'csv' | 'settings' | 'competitors' | 'gap' | 'calendar';
+export type TabId = 'keywords' | 'youtube' | 'csv' | 'settings' | 'competitors' | 'gap' | 'calendar' | 'tiktok';
 
 // ── Quota tracker ─────────────────────────────────────────────
 export interface QuotaEntry {
@@ -392,3 +397,95 @@ export interface SnapshotInsert {
   best_ratio: number;
   api_data: Record<string, unknown>;
 }
+
+// ── Phase 17: Trending Keywords ───────────────────────────────
+export interface TrendingKeyword {
+  keyword: string;
+  score: number;           // 0-100 weighted by views
+  rank: number;            // 1-10
+  sampleVideoTitles: string[];
+  estimatedSearchVolume?: number;
+}
+
+// ── Phase 18: TikTok Channel Manager ─────────────────────────
+export type TiktokChannelStatus =
+  | 'active' | 'warming_up' | 'warning' | 'shadowbanned'
+  | 'banned' | 'paused' | 'archived';
+
+export type TiktokLanguage = 'ja' | 'ko' | 'en' | 'vi' | 'other';
+
+export type TiktokPostingFrequency = 'daily' | '3x_week' | 'weekly' | 'irregular';
+
+/** Encrypted field stored as JSON {ciphertext, iv} in Supabase text column */
+export interface EncryptedCredentials {
+  ciphertext: string;  // base64 AES-GCM ciphertext
+  iv: string;          // base64 12-byte IV
+}
+
+export interface TiktokChannel {
+  id: string;
+  userId: string;
+  workspaceId?: string | null;
+  // Identity
+  channelName: string;
+  username: string;          // @handle
+  channelUrl: string;
+  channelId?: string | null;
+  uuid?: string | null;
+  // Targeting
+  targetKeywords: string[];
+  niche?: string | null;
+  language?: TiktokLanguage | null;
+  regionCountry?: string | null;
+  // Status
+  status: TiktokChannelStatus;
+  healthScore?: number | null;
+  lastPostAt?: string | null;
+  lastLoginAt?: string | null;
+  postingFrequency?: TiktokPostingFrequency | null;
+  // Metrics
+  followersCount: number;
+  followingCount: number;
+  videosCount: number;
+  totalLikes: number;
+  avgViews: number;
+  engagementRate?: number | null;
+  metricsUpdatedAt?: string | null;
+  // Account
+  accountCreatedAt?: string | null;
+  isMonetized: boolean;
+  isCreatorFund: boolean;
+  // Encrypted credentials (null = not set)
+  encryptedEmail?: EncryptedCredentials | null;
+  encryptedSecondaryEmail?: EncryptedCredentials | null;
+  encryptedPassword?: EncryptedCredentials | null;
+  encryptedToken?: EncryptedCredentials | null;
+  encryptedCookie?: EncryptedCredentials | null;
+  encryptedRecoveryCodes?: EncryptedCredentials | null;
+  encryptedPhone?: EncryptedCredentials | null;
+  encryptionMethod?: string;
+  // Technical
+  proxyUrl?: string | null;
+  proxyCountry?: string | null;
+  deviceFingerprint?: string | null;
+  userAgent?: string | null;
+  // Organization
+  tags: string[];
+  notes?: string | null;
+  ownerLabel?: string | null;
+  priority: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Decrypted credentials (in-memory only, never persisted) */
+export interface PlainCredentials {
+  email?: string;
+  secondaryEmail?: string;
+  password?: string;
+  token?: string;
+  cookie?: string;
+  recoveryCodes?: string[];
+  phone?: string;
+}
+
