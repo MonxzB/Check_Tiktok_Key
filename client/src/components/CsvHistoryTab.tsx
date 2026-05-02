@@ -9,6 +9,8 @@ interface CsvHistoryTabProps {
   refChannels: RefChannel[];
   onImport: (text: string) => void;
   toast: ToastFn;
+  /** Task 2.5: Whether personal scoring is active — determines CSV column values */
+  personalScoringEnabled?: boolean;
 }
 
 interface ExportCard {
@@ -19,7 +21,7 @@ interface ExportCard {
   filename: string;
 }
 
-export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImport, toast }: CsvHistoryTabProps) {
+export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImport, toast, personalScoringEnabled = false }: CsvHistoryTabProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -35,8 +37,8 @@ export default function CsvHistoryTab({ keywords, refVideos, refChannels, onImpo
 
   function handleExportKeywords() {
     if (!keywords.length) { toast('Chưa có keyword', 'error'); return; }
-    downloadBlob(exportKeywordsCSV(keywords), 'youtube_longform_keywords.csv');
-    toast('Đã xuất CSV keywords!', 'success');
+    downloadBlob(exportKeywordsCSV(keywords, personalScoringEnabled), 'youtube_longform_keywords.csv');
+    toast(`Đã xuất CSV keywords! (chế độ: ${personalScoringEnabled ? 'Personal Score' : 'LF Score'})`, 'success');
   }
   function handleExportVideos() {
     if (!refVideos.length) { toast('Chưa có reference videos', 'error'); return; }

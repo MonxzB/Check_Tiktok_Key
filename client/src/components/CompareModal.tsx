@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { toPng } from 'html-to-image';
 import type { Keyword } from '../types';
+import { ChartContainer } from './ChartContainer.tsx';
 
 // ── Constants ────────────────────────────────────────────────
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
@@ -144,8 +145,8 @@ export default function CompareModal({ keywords, onClose }: CompareModalProps) {
         <div ref={chartRef} style={{ padding: '20px 28px', background: 'var(--bg-secondary)', borderRadius: 12 }}>
           {isMobile ? (
             // Mobile: Bar chart
-            <div style={{ height: 260, minHeight: 260, width: '100%' }}>
-              <ResponsiveContainer width="100%" height={260}>
+            <ChartContainer aspectRatio={16/6} minHeight={220}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 8, right: 20, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                   <XAxis dataKey="axis" tick={{ fontSize: 10, fill: '#888' }} />
@@ -156,11 +157,11 @@ export default function CompareModal({ keywords, onClose }: CompareModalProps) {
                   ))}
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </ChartContainer>
           ) : (
             // Desktop: Radar chart
-            <div style={{ height: 340, minHeight: 340, width: '100%' }}>
-              <ResponsiveContainer width="100%" height={340}>
+            <ChartContainer aspectRatio={16/9} minHeight={300}>
+              <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData} margin={{ top: 10, right: 40, bottom: 10, left: 40 }}>
                   <PolarGrid stroke="rgba(255,255,255,0.08)" />
                   <PolarAngleAxis
@@ -195,7 +196,7 @@ export default function CompareModal({ keywords, onClose }: CompareModalProps) {
                   />
                 </RadarChart>
               </ResponsiveContainer>
-            </div>
+            </ChartContainer>
           )}
         </div>
 

@@ -271,9 +271,10 @@ export function useKeywords(
   }, [isOnline, toast]);
 
   // ── exportCsv ─────────────────────────────────────────────
-  const exportCsv = useCallback((filtered: Keyword[]) => {
+  /** Task 2.5: personalScoringEnabled determines whether Personal Score column is populated */
+  const exportCsv = useCallback((filtered: Keyword[], personalScoringEnabled = false) => {
     if (!filtered.length) { toast('Chưa có dữ liệu để xuất', 'error'); return; }
-    downloadBlob(exportKeywordsCSV(filtered), 'youtube_longform_keywords.csv');
+    downloadBlob(exportKeywordsCSV(filtered, personalScoringEnabled), 'youtube_longform_keywords.csv');
     toast('Đã xuất CSV!', 'success');
   }, [toast]);
 

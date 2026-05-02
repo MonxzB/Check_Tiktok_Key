@@ -6,6 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { ChartContainer } from './ChartContainer.tsx';
 import type { KeywordSnapshot } from '../engine/trendDetection.ts';
 import { calculateTrend, filterByPeriod } from '../engine/trendDetection.ts';
 import type { UseKeywordsReturn } from '../hooks/useKeywords.ts';
@@ -302,8 +303,8 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
                 </div>
 
                 {/* Line chart */}
-                <div style={{ height: 240, minHeight: 240, width: '100%' }}>
-                  <ResponsiveContainer width="100%" height={240}>
+                <ChartContainer aspectRatio={16/6} minHeight={220}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                       <XAxis dataKey="date" tick={{ fill: '#888', fontSize: 10 }} />
@@ -322,7 +323,7 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
                       <Line yAxisId="views" type="monotone" dataKey="views" name="Avg Views" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="4 2" />
                     </LineChart>
                   </ResponsiveContainer>
-                </div>
+                </ChartContainer>
               </>
             )}
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, type ReactNode } from 'react';
+import React, { useState, useMemo, useEffect, type ReactNode } from 'react';
 import type { Keyword, KeywordFilters } from '../types';
 import { scoreBadgeClass, recBadgeClass, formatNum } from './utils.ts';
 import { getFreshness, getFreshnessColor } from '../engine/dataMetadata.js';
@@ -9,6 +9,7 @@ import CompareModal from './CompareModal.tsx';
 import { calculateTrend } from '../engine/trendDetection.ts';
 import { NoResultsFilterEmptyState } from './EmptyState.tsx';
 import { usePersistentState } from '../hooks/usePersistentState.ts';
+import { wsKey } from '../engine/storageKeys.ts';
 
 const PAGE_SIZE = 50;
 
@@ -53,14 +54,39 @@ interface KeywordTableProps {
   compare?: UseCompareReturn;
   /** Pre-computed trend badges per keyword text (from snapshot data) */
   trendBadges?: Record<string, string | null>;
+  /** Active workspace ID for scoping sort state in localStorage */
+  workspaceId?: string | null;
 }
 
-export default function KeywordTable({ keywords, filters, onSelectKeyword, onAnalyzeKeyword, bulk, compare, trendBadges }: KeywordTableProps) {
-  const [sortCol, setSortCol] = usePersistentState('ytlf_sort_col', 'longFormScore');
-  const [sortDir, setSortDir] = usePersistentState<'asc' | 'desc'>('ytlf_sort_dir', 'desc');
-  const [page, setPage]       = useState(1);
+export default function KeywordTable({ keywords, filters, onSelectKeyword, onAnalyzeKeyword, bulk, compare, trendBadges, workspaceId }: KeywordTableProps) {
+  // Task 1.2: Workspace-scoped sort state
+  // Old global keys: ytlf_sort_col / ytlf_sort_dir
+  // New scoped keys: ytlf_sort_col_ws_<id> / ytlf_sort_dir_ws_<id>
+  const sortColKey = wsKey('sort_col', workspaceId);
+  const sortDirKey = wsKey('sort_dir', workspaceId);
+
+  const [sortCol, setSortCol] = usePersistentState(sortColKey, 'longFormScore');
+  const [sortDir, setSortDir] = usePersistentState<'asc' | 'desc'>(sortDirKey, 'desc');
+
+  // One-time migration: copy old global sort prefs into this workspace's key
+  useEffect(() => {
+    const migKey = wsKey('sort_migrated', workspaceId);
+    if (localStorage.getItem(migKey)) return; // already done
+    const oldCol = localStorage.getItem('ytlf_sort_col');
+    const oldDir = localStorage.getItem('ytlf_sort_dir');
+    if (oldCol) {
+      try { localStorage.setItem(sortColKey, oldCol); } catch {}
+    }
+    if (oldDir) {
+      try { localStorage.setItem(sortDirKey, oldDir); } catch {}
+    }
+    localStorage.setItem(migKey, '1');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId]);
+
+  const [page, setPage]         = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showBulkModal, setShowBulkModal]     = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 0);
 
@@ -173,6 +199,23 @@ export default function KeywordTable({ keywords, filters, onSelectKeyword, onAna
     }
   }
 
+  /**
+   * Task 3.4: Preload lazy tab chunks on row hover (desktop only).
+   * Fires dynamic imports so the browser starts downloading the chunks
+   * before the user clicks — typically saves 150-400ms on slow connections.
+   * Gated behind pointer:fine to avoid wasting mobile data.
+   */
+  const canHover = typeof window !== 'undefined' &&
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  function preloadDetailTabs() {
+    if (!canHover) return;
+    // Trigger chunk downloads for heavy DetailModal tabs
+    import('./SeoTab.tsx').catch(() => null);
+    import('./MonetizationTab.tsx').catch(() => null);
+    import('./ThumbnailTab.tsx').catch(() => null);
+  }
+
   return (
     <>
       <section className="card" style={{ position: 'relative' }}>
@@ -230,6 +273,7 @@ export default function KeywordTable({ keywords, filters, onSelectKeyword, onAna
                 <tr
                   key={kw.keyword}
                   onClick={() => onSelectKeyword(kw)}
+                  onMouseEnter={preloadDetailTabs}
                   style={{ cursor: 'pointer', background: selected.has(kw.keyword) ? 'rgba(0,229,255,0.04)' : undefined }}
                 >
                   {/* Bulk checkbox */}

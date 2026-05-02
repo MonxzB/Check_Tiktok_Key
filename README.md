@@ -267,12 +267,6 @@ Finance/Investment: 3.5-4x · Tech: 2.5x · Health: 2x · Entertainment: 0.7x
 - Tab đang mở, filter settings, sort column được lưu localStorage
 - Không mất state khi refresh trang
 
-### Keyboard Shortcuts
-| Shortcut | Action |
-|----------|--------|
-| `Shift+F` | Toggle filter bar |
-| `R` | Reset filters |
-| `Escape` | Đóng modal |
 
 ### Tooltips
 - Tất cả button có `data-tooltip` attribute
@@ -283,7 +277,7 @@ Finance/Investment: 3.5-4x · Tech: 2.5x · Health: 2x · Entertainment: 0.7x
 ## Cài đặt & Chạy
 
 ### Prerequisites
-- Node.js 18+
+- Node.js **v24.15.0+** (xem `.nvmrc`)
 - Supabase account (miễn phí)
 - YouTube Data API v3 key (optional)
 
@@ -496,7 +490,63 @@ Chạy theo thứ tự hoặc dùng `supabase db push` nếu có Supabase CLI.
 - **Recharts**: Tất cả `ResponsiveContainer` dùng pixel height (không phải `100%`) để tránh 0-size warning
 - **ContentCalendarTab**: Lazy-loaded + Error Boundary để isolate crashes
 - **DetailModal tabs**: Tất cả tab phụ (SEO, Monetize, Thumbnail) lazy-loaded với Suspense
+- **Keyboard shortcuts**: Guard `isInput` ngăn shortcut `R`/`Shift+F` kích hoạt khi đang gõ input/textarea
+- **Hook order**: `useAuth` + `useWorkspaces` phải gọi trước các `usePersistentState` phụ thuộc vào `activeWorkspaceId`
+
+---
+
+## Audit & Robustness Fixes (Phase 16.5)
+
+Bảng dưới ghi lại các vấn đề được phát hiện qua code review và trạng thái fix:
+
+| Mức độ | Vấn đề | Fix áp dụng | File |
+|--------|--------|-------------|------|
+| 🔴 Cao | `localStorage` không scope theo workspace — filter/calendar/planned của workspace A dính sang B | `engine/storageKeys.ts` — `wsKey(key, workspaceId)` factory; cập nhật `App.tsx`, `ContentCalendarTab`, `GapAnalysisTab`, `contentCalendar.ts` | `storageKeys.ts` |
+| 🔴 Cao | Hook order: `activeWorkspaceId` dùng trước khi define do thứ tự hook sai | Move `useAuth/useWorkspaces` lên đầu `App()`, sau đó mới gọi `usePersistentState` | `App.tsx` |
+| 🔴 Cao | `publishingDays is not defined` — shorthand property bug trong calendar engine | Đổi `publishingDays` → `publishingDays: publishDays` | `contentCalendar.ts` |
+| 🟠 TB | `Multiple GoTrueClient instances` — Supabase module khởi tạo 2 lần khi Vite split static+dynamic chunk | `globalThis` singleton guard + explicit `storageKey: 'ytlf-auth-token'` | `lib/supabase.ts` |
+| 🟠 TB | Recharts `width(-1) height(-1)` warning — chart render khi container chưa có size | Thay `height="100%"` → pixel height trực tiếp trên `ResponsiveContainer` | `DetailModal`, `NicheHeatmap`, `CompareModal` |
+| 🟠 TB | DetailModal score card `span 2` nhưng grid 4 cột → card Total Score chỉ nửa width | CSS `.detail-grid .detail-item:last-child { grid-column: 1 / -1 }` | `index.css` |
+| 🟠 TB | README Phase mismatch: Gap Analysis bị thiếu khỏi phase table | Thêm `Phase 10.5 — Gap Analysis Tab` | `README.md` |
+| 🟡 Thấp | Keyboard `R` không guard khi gõ input | Đã có `isInput` check sẵn — không cần fix thêm | `App.tsx` |
+| 🟡 Thấp | `node-fetch v3` ESM compatibility | Server dùng `"type": "module"` — compatible ✅ | `server/package.json` |
+
+### localStorage Key Architecture
+
+Sau Phase 16.5, tất cả keys tuân theo pattern:
+
+```
+# Workspace-scoped (không leak giữa workspace)
+ytlf_active_tab_ws_<workspaceId>
+ytlf_show_filter_ws_<workspaceId>
+ytlf_filters_ws_<workspaceId>
+ytlf_calendar_status_ws_<workspaceId>
+ytlf_calendar_notes_ws_<workspaceId>
+ytlf_planned_ws_<workspaceId>
+
+# Global (user-level, dùng chung mọi workspace)
+ytlf_settings
+ytlf_personal_weights
+ytlf_personal_enabled
+ytlf_quota_<hash>_<date>
+ytlf_heatmap_visible
+ytlf_sort_col          ← UI preference, intentionally global
+ytlf_sort_dir          ← UI preference, intentionally global
+```
+
+---
+
+## Keyboard Shortcuts
+
+| Key | Action | Tab |
+|-----|--------|-----|
+| `Shift + F` | Toggle filter bar | Keywords |
+| `R` | Reset all filters | Keywords |
+| `Escape` | Đóng modal/dialog | Toàn cục |
+
+> **Guard**: Tất cả shortcuts có `isInput` check — không kích hoạt khi focus vào `INPUT`, `TEXTAREA`, `SELECT`.
 
 ---
 
 *Made with ❤️ for Japanese YouTube Content Creators*
+

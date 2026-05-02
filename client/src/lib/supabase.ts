@@ -1,28 +1,34 @@
-// client/src/lib/supabase.ts
-// NOTE: Use globalThis singleton to prevent duplicate GoTrueClient instances
-// when the module is bundled into both static and dynamic chunks by Vite.
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+/**
+ * lib/supabase.ts
+ *
+ * Task 2.2: Supabase singleton — clean implementation.
+ *
+ * The globalThis hack was a band-aid for Vite splitting @supabase/* across
+ * multiple chunks. That root cause is now fixed in vite.config.ts via
+ * manualChunks → all @supabase/* packages land in one 'supabase' chunk.
+ *
+ * This file is now a simple, idiomatic Supabase client initializer.
+ * storageKey is still set to prevent collisions with other Supabase apps
+ * running on the same localhost origin during development.
+ */
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL  as string;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { createClient } from '@supabase/supabase-js';
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('[Supabase] VITE_SUPABASE_URL hoặc VITE_SUPABASE_ANON_KEY chưa được cấu hình.');
+const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL  as string;
+const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+if (!supabaseUrl || !supabaseAnon) {
+  console.warn('[supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY — auth will not work.');
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const g = globalThis as any;
-const SINGLETON_KEY = '__ytlf_supabase_client__';
-
-if (!g[SINGLETON_KEY]) {
-  g[SINGLETON_KEY] = createClient(supabaseUrl ?? '', supabaseKey ?? '', {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storageKey: 'ytlf-auth-token', // Explicit key prevents collision
-    },
-  });
-}
-
-export const supabase: SupabaseClient = g[SINGLETON_KEY];
+export const supabase = createClient(supabaseUrl, supabaseAnon, {
+  auth: {
+    /**
+     * Custom storage key prevents token collisions when multiple Supabase
+     * projects are running on the same origin (e.g. localhost dev).
+     */
+    storageKey: 'ytlf-auth-token',
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});

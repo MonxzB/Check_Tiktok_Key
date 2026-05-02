@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
+import { ChartContainer } from './ChartContainer.tsx';
 import type { TreemapNode } from 'recharts';
 import type { Keyword, Niche } from '../types';
 import { buildHeatmapData, NICHE_EMOJI, type NicheStats } from '../engine/heatmapData.ts';
@@ -182,8 +183,8 @@ export default function NicheHeatmap({ keywords, onSelectNiche, activeNiche }: N
       </div>
 
       {visible && (
-        <div style={{ height: mapHeight, minHeight: mapHeight, width: '100%' }}>
-          <ResponsiveContainer width="100%" height={mapHeight}>
+        <ChartContainer aspectRatio={16/5} minHeight={180}>
+          <ResponsiveContainer width="100%" height="100%">
             <Treemap
               data={data as unknown as Record<string, unknown>[]}
               dataKey="size"
@@ -206,7 +207,7 @@ export default function NicheHeatmap({ keywords, onSelectNiche, activeNiche }: N
               }} />
             </Treemap>
           </ResponsiveContainer>
-        </div>
+        </ChartContainer>
       )}
     </section>
   );

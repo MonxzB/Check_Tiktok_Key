@@ -117,6 +117,27 @@ function buildEntry(kw: Keyword, date: Date, idx: number): CalendarEntry {
   };
 }
 
+// ── Priority calculation (Task 2.4) ──────────────────────────
+/**
+ * Returns a scheduling priority score for a keyword.
+ *
+ * Rules:
+ *   +10  trending keywords (rising) — time-sensitive opportunity
+ *   -5   stable evergreen (score ≥ 75, evergreen ≥ 8) — can wait
+ *   base  personalScore ?? longFormScore
+ */
+function calculatePriority(kw: Keyword): number {
+  const base = (kw as any).personalScore ?? kw.longFormScore;
+
+  // Trending keywords have a shorter window — schedule early
+  const trendBonus = (kw as any).trendDirection === 'rising' ? 10 : 0;
+
+  // High-score evergreen content is stable — small wait is acceptable
+  const evergreenPenalty = (kw.evergreen ?? 0) >= 8 && base >= 75 ? -5 : 0;
+
+  return base + trendBonus + evergreenPenalty;
+}
+
 // ── Main generator ────────────────────────────────────────────
 export function generateCalendar(
   keywords: Keyword[],
@@ -131,16 +152,38 @@ export function generateCalendar(
 
   const publishDays = PUBLISH_DAY_SETS[frequency];
 
-  // Filter & sort by score desc
+  // Task 2.4: Filter, calculate priority, group by series
   const eligible = [...keywords]
     .filter(k => k.longFormScore >= minScore)
-    .sort((a, b) => b.longFormScore - a.longFormScore);
+    .sort((a, b) => calculatePriority(b) - calculatePriority(a));
+
+  // Group keywords with same niche+seriesPotential together
+  // so they land in consecutive weeks (series sequencing)
+  const grouped: Keyword[] = [];
+  const seen = new Set<string>();
+
+  // First pass: collect series leaders (highest priority per series group)
+  for (const kw of eligible) {
+    const seriesKey = kw.seriesPotential >= 7 ? `${kw.niche}-${kw.level}` : null;
+    if (seriesKey && !seen.has(seriesKey)) {
+      seen.add(seriesKey);
+      // Collect all members of this series
+      const members = eligible.filter(k =>
+        k !== kw &&
+        k.seriesPotential >= 7 &&
+        `${k.niche}-${k.level}` === seriesKey,
+      );
+      grouped.push(kw, ...members);
+    } else if (!seriesKey) {
+      grouped.push(kw);
+    }
+  }
 
   // Build week containers
   const weeks: CalendarWeek[] = [];
   const weekStart = new Date(startDate);
   weekStart.setHours(0, 0, 0, 0);
-  // Align to start of week (Monday)
+  // Align to Monday
   const dow = weekStart.getDay();
   const daysToMon = dow === 0 ? -6 : 1 - dow;
   weekStart.setDate(weekStart.getDate() + daysToMon);
@@ -149,12 +192,11 @@ export function generateCalendar(
     weeks.push(buildWeek(w + 1, addDays(weekStart, w * 7)));
   }
 
-  // Assign entries to slots
+  // Assign entries to publish slots
   let cursor = new Date(startDate);
   let entryIdx = 0;
 
-  for (const kw of eligible) {
-    // Find next available publish date from cursor
+  for (const kw of grouped) {
     cursor = getNextPublishDate(cursor, publishDays);
     const weekIdx = Math.floor(
       (cursor.getTime() - weekStart.getTime()) / (7 * 24 * 60 * 60 * 1000),
@@ -164,15 +206,14 @@ export function generateCalendar(
     const entry = buildEntry(kw, cursor, entryIdx++);
     weeks[weekIdx].entries.push(entry);
 
-    // Advance cursor by days-per-slot
     const daysPerSlot = Math.floor(7 / frequency);
     cursor = addDays(cursor, daysPerSlot);
   }
 
   return {
-    weeks: weeks.filter(w => w.entries.length > 0), // Only non-empty weeks
+    weeks: weeks.filter(w => w.entries.length > 0),
     totalEntries: entryIdx,
-    publishingDays: publishDays,   // Fix: was 'publishingDays' (shorthand for undefined var)
+    publishingDays: publishDays,
     options,
   };
 }

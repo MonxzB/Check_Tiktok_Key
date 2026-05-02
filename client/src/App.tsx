@@ -233,6 +233,7 @@ export default function App() {
             onAnalyzeKeyword={handleAnalyzeKeyword}
             bulk={bulk}
             compare={compare}
+            workspaceId={activeWorkspaceId}
           />
         )}
       </div>
@@ -271,6 +272,7 @@ export default function App() {
           refChannels={refChannels}
           onImport={importCsv}
           toast={toast}
+          personalScoringEnabled={personalScoring.enabled}
         />
       </div>
 
