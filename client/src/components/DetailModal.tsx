@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import type { Keyword } from '../types';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import type { Keyword, RefVideo } from '../types';
 import { scoreColor, recBadgeClass } from './utils.ts';
 import { getFreshness, getFreshnessColor } from '../engine/dataMetadata.js';
 import {
@@ -12,6 +12,9 @@ import type { UseKeywordsReturn } from '../hooks/useKeywords.ts';
 import type { UsePersonalScoringReturn } from '../hooks/usePersonalScoring.ts';
 import type { PerformanceRating } from '../engine/personalizedScoring.ts';
 
+const SeoTab = lazy(() => import('./SeoTab.js'));
+const MonetizationTab = lazy(() => import('./MonetizationTab.js'));
+
 type Period = '7d' | '30d' | '90d' | 'all';
 
 interface DetailModalProps {
@@ -20,13 +23,14 @@ interface DetailModalProps {
   onAnalyze?: (keyword: string) => void;
   snapshots?: UseKeywordsReturn['snapshots'];
   personalScoring?: UsePersonalScoringReturn;
+  refVideos?: RefVideo[];  // Phase 12: for SEO tab
 }
 
 interface ScoreDimension { label: string; value: number; max: number; desc: string; }
 
-type TabId = 'detail' | 'trend' | 'feedback';
+type TabId = 'detail' | 'trend' | 'feedback' | 'seo' | 'monetization';
 
-export default function DetailModal({ kw, onClose, onAnalyze, snapshots, personalScoring }: DetailModalProps) {
+export default function DetailModal({ kw, onClose, onAnalyze, snapshots, personalScoring, refVideos = [] }: DetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('detail');
   const [period, setPeriod]       = useState<Period>('30d');
   const [kwSnapshots, setKwSnapshots] = useState<KeywordSnapshot[]>([]);
@@ -98,20 +102,24 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
         <span className={`rec-badge ${recBadgeClass(kw.recommendation)}`}>{kw.recommendation}</span>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 0, marginTop: 20, marginBottom: 0, borderBottom: '1px solid var(--glass-border)' }}>
-          {(['detail', 'trend', 'feedback'] as const).map(t => (
+        <div style={{ display: 'flex', gap: 0, marginTop: 20, marginBottom: 0, borderBottom: '1px solid var(--glass-border)', overflowX: 'auto' }}>
+          {(['detail', 'trend', 'feedback', 'seo', 'monetization'] as const).map(t => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
               style={{
-                padding: '7px 18px', border: 'none', background: 'none', cursor: 'pointer',
-                fontSize: '0.85rem', fontWeight: activeTab === t ? 700 : 400,
+                padding: '7px 16px', border: 'none', background: 'none', cursor: 'pointer',
+                fontSize: '0.82rem', fontWeight: activeTab === t ? 700 : 400,
                 color: activeTab === t ? 'var(--accent)' : 'var(--text-muted)',
                 borderBottom: activeTab === t ? '2px solid var(--accent)' : '2px solid transparent',
-                marginBottom: -1, transition: 'all 0.15s',
+                marginBottom: -1, transition: 'all 0.15s', whiteSpace: 'nowrap', flexShrink: 0,
               }}
             >
-              {t === 'detail' ? '📋 Chi tiết' : t === 'trend' ? '📈 Trend' : '📊 Feedback'}
+              {t === 'detail' ? '📋 Chi tiết'
+                : t === 'trend' ? '📈 Trend'
+                : t === 'feedback' ? '📊 Feedback'
+                : t === 'seo' ? '🎯 SEO'
+                : '💰 Monetize'}
             </button>
           ))}
         </div>
@@ -321,6 +329,28 @@ export default function DetailModal({ kw, onClose, onAnalyze, snapshots, persona
         {/* Feedback Tab */}
         {activeTab === 'feedback' && (
           <FeedbackPanel kw={kw} personalScoring={personalScoring} />
+        )}
+
+        {/* SEO Tab (Phase 12) */}
+        {activeTab === 'seo' && (
+          <Suspense fallback={
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+              <span className="spinner" style={{ width: 20, height: 20 }} />
+            </div>
+          }>
+            <SeoTab keyword={kw} refVideos={refVideos} />
+          </Suspense>
+        )}
+
+        {/* Monetization Tab (Phase 14) */}
+        {activeTab === 'monetization' && (
+          <Suspense fallback={
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+              <span className="spinner" style={{ width: 20, height: 20 }} />
+            </div>
+          }>
+            <MonetizationTab keyword={kw} lang={kw.contentLanguage ?? 'ja'} />
+          </Suspense>
         )}
       </div>
     </div>

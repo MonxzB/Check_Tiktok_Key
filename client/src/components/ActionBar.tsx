@@ -6,9 +6,10 @@ interface ActionBarProps {
   onExport: () => void;
   onImport: (text: string) => void;
   onClear: () => void;
+  showFilter?: boolean;
 }
 
-export default function ActionBar({ onScore, onFilterToggle, onExport, onImport, onClear }: ActionBarProps) {
+export default function ActionBar({ onScore, onFilterToggle, onExport, onImport, onClear, showFilter }: ActionBarProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -24,12 +25,50 @@ export default function ActionBar({ onScore, onFilterToggle, onExport, onImport,
 
   return (
     <div className="action-bar">
-      <button className="btn btn-primary" onClick={onScore}>📊 Chấm điểm lại</button>
-      <button className="btn btn-secondary" onClick={onFilterToggle}>🎯 Lọc key đáng làm</button>
-      <button className="btn btn-secondary" onClick={onExport}>📥 Xuất CSV</button>
-      <button className="btn btn-secondary" onClick={() => fileRef.current?.click()}>📤 Nhập CSV</button>
+      <button
+        className="btn btn-primary"
+        onClick={onScore}
+        data-tooltip="Tính lại điểm cho tất cả keyword"
+      >
+        📊 Chấm điểm lại
+      </button>
+      <button
+        className="btn btn-secondary"
+        onClick={onFilterToggle}
+        data-tooltip="Shift+F — Lọc keyword có điểm ≥70"
+        style={showFilter ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}}
+      >
+        🎯 Lọc key đáng làm
+        {showFilter && <span style={{ marginLeft: 4, fontSize: '0.7rem', opacity: 0.7 }}>✓</span>}
+      </button>
+      <button
+        className="btn btn-secondary"
+        onClick={onExport}
+        data-tooltip="Xuất keyword sang CSV"
+      >
+        📥 Xuất CSV
+      </button>
+      <button
+        className="btn btn-secondary"
+        onClick={() => fileRef.current?.click()}
+        data-tooltip="Nhập keyword từ file CSV"
+      >
+        📤 Nhập CSV
+      </button>
       <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
-      <button className="btn btn-danger" onClick={onClear}>🗑 Xoá tất cả</button>
+      <button
+        className="btn btn-danger"
+        onClick={onClear}
+        data-tooltip="Xóa tất cả keyword trong workspace"
+      >
+        🗑 Xoá tất cả
+      </button>
+
+      {/* Keyboard hint */}
+      <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span className="kbd">Shift+F</span> lọc
+        {showFilter && <><span className="kbd">R</span> reset</>}
+      </span>
     </div>
   );
 }

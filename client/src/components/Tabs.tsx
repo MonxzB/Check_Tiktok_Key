@@ -12,6 +12,7 @@ const TABS: TabDefinition[] = [
   { id: 'csv',         label: '📁 CSV / History' },
   { id: 'competitors', label: '👥 Competitors' },
   { id: 'gap',         label: '🎯 Gap Analysis' },
+  { id: 'calendar',   label: '📅 Content Calendar' },
   { id: 'settings',   label: '⚙️ Cài đặt' },
 ];
 

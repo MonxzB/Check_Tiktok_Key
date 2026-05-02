@@ -1,15 +1,17 @@
 // ============================================================
-// hooks/useKeywords.ts — Phase 3: Supabase Cloud Sync
+// hooks/useKeywords.ts — Phase 3: Supabase Cloud Sync (Phase 11: multi-language)
 // workspaceId drives all loads. Offline-first with queue + retry.
 // ============================================================
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
-import { expandKeywords, getSeedObjects } from '../engine/expansion.js';
+import { expandKeywordsWithPack, parseSeeds, getSeedObjects } from '../engine/expansion.js';
 import { scoreLongFormKeywords } from '../engine/longFormScoring.js';
+import { getLanguagePack } from '../engine/languages/index.js';
 import { exportKeywordsCSV, importKeywordsCSV, downloadBlob } from '../engine/csvUtils.js';
 import { buildMetadata } from '../engine/dataMetadata.js';
-import type { Keyword, KeywordApiSummary, KeywordMetadata, ToastFn, KeywordRow } from '../types';
+import type { Keyword, KeywordApiSummary, KeywordMetadata, ToastFn, KeywordRow, ContentLanguage } from '../types';
 import { rowToKeyword, keywordToRow } from '../types';
+import type { Workspace } from '../types';
 import { useSnapshots } from './useSnapshots.ts';
 
 const LOCAL_FALLBACK_KEY = 'ytlf_offline_kws';
@@ -47,7 +49,12 @@ export interface UseKeywordsReturn {
   snapshots: ReturnType<typeof useSnapshots>;
 }
 
-export function useKeywords(toast: ToastFn, workspaceId: string | null): UseKeywordsReturn {
+
+export function useKeywords(
+  toast: ToastFn,
+  workspaceId: string | null,
+  activeWorkspace?: Workspace | null,
+): UseKeywordsReturn {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [loading, setLoading]   = useState(false);
   const snapshots = useSnapshots();
@@ -59,6 +66,12 @@ export function useKeywords(toast: ToastFn, workspaceId: string | null): UseKeyw
   const workspaceRef  = useRef<string | null>(null);
   const userIdRef     = useRef<string | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const langRef       = useRef<ContentLanguage>('ja');
+
+  // Keep langRef in sync with workspace
+  useEffect(() => {
+    langRef.current = activeWorkspace?.contentLanguage ?? 'ja';
+  }, [activeWorkspace?.contentLanguage]);
 
   // ── Online/offline listeners ───────────────────────────────
   useEffect(() => {
@@ -136,7 +149,8 @@ export function useKeywords(toast: ToastFn, workspaceId: string | null): UseKeyw
     const uid  = userIdRef.current;
     if (!wsId || !uid || !kws.length) return;
 
-    const rows = kws.map(k => keywordToRow(k, wsId, uid));
+    const lang = langRef.current;
+    const rows = kws.map(k => keywordToRow(k, wsId, uid, lang));
 
     if (!isOnline) {
       rows.forEach(row => offlineQueue.push({ row, workspaceId: wsId }));
@@ -163,7 +177,6 @@ export function useKeywords(toast: ToastFn, workspaceId: string | null): UseKeyw
     const toFlush = [...offlineQueue];
     offlineQueue = [];
     try {
-      // Group by workspaceId
       const grouped = toFlush.reduce((acc, item) => {
         if (!acc[item.workspaceId]) acc[item.workspaceId] = [];
         acc[item.workspaceId].push(item.row);
@@ -175,7 +188,7 @@ export function useKeywords(toast: ToastFn, workspaceId: string | null): UseKeyw
       }
       setSyncStatus({ state: 'synced', lastSyncedAt: new Date() });
     } catch {
-      offlineQueue = [...toFlush, ...offlineQueue]; // put back
+      offlineQueue = [...toFlush, ...offlineQueue];
       setSyncStatus(s => ({ ...s, state: 'offline' }));
     }
   }
@@ -212,11 +225,18 @@ export function useKeywords(toast: ToastFn, workspaceId: string | null): UseKeyw
   const expand = useCallback((seedText: string) => {
     const lines = seedText.split('\n').map(l => l.trim()).filter(Boolean);
     if (!lines.length) { toast('Vui lòng nhập ít nhất 1 seed keyword', 'error'); return; }
-    const scored = scoreLongFormKeywords(expandKeywords(getSeedObjects(lines))).map(kw => ({
-      ...kw, metadata: buildMetadata({ hasApiData: false }),
+    const lang = langRef.current;
+    const pack = getLanguagePack(lang);
+    const seeds = parseSeeds(lines, lang);
+    const scored = scoreLongFormKeywords(
+      expandKeywordsWithPack(seeds, pack),
+      pack,
+    ).map(kw => ({
+      ...kw,
+      metadata: buildMetadata({ hasApiData: false }),
       workspaceId: workspaceRef.current ?? undefined,
+      contentLanguage: lang,
     }));
-    // Optimistic update
     setKeywords(prev => {
       const existing = new Set(prev.map(k => k.keyword));
       const merged = [...prev, ...scored.filter(k => !existing.has(k.keyword))];
@@ -230,7 +250,8 @@ export function useKeywords(toast: ToastFn, workspaceId: string | null): UseKeyw
   // ── score ─────────────────────────────────────────────────
   const score = useCallback(() => {
     if (!keywords.length) { toast('Chưa có keyword nào', 'error'); return; }
-    const rescored = scoreLongFormKeywords([...keywords]);
+    const pack = getLanguagePack(langRef.current);
+    const rescored = scoreLongFormKeywords([...keywords], pack);
     setKeywords(rescored);
     saveLocal(rescored);
     toast('Đã chấm điểm xong!', 'success');

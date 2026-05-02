@@ -1,9 +1,9 @@
 // ============================================================
-// hooks/useWorkspaces.ts — Supabase-backed workspace CRUD
+// hooks/useWorkspaces.ts — Supabase-backed workspace CRUD (Phase 11: content_language)
 // ============================================================
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.js';
-import type { User } from '../types';
+import type { User, ContentLanguage } from '../types';
 import type { Workspace, WorkspaceInsert } from '../types';
 
 const LOCAL_KEY = 'ytlf_active_workspace';
@@ -14,7 +14,7 @@ export interface UseWorkspacesReturn {
   loading: boolean;
   createWorkspace: (insert: Omit<WorkspaceInsert, 'user_id'>) => Promise<Workspace | null>;
   switchWorkspace: (id: string) => void;
-  updateWorkspace: (id: string, patch: Partial<Pick<Workspace, 'name' | 'description' | 'niche' | 'color'>>) => Promise<void>;
+  updateWorkspace: (id: string, patch: Partial<Pick<Workspace, 'name' | 'description' | 'niche' | 'color' | 'contentLanguage'>>) => Promise<void>;
   deleteWorkspace: (id: string) => Promise<void>;
   ensureDefaultWorkspace: (user: User) => Promise<Workspace | null>;
 }
@@ -69,6 +69,7 @@ export function useWorkspaces(user: User | null): UseWorkspacesReturn {
         description: 'Workspace mặc định',
         color: '#00e5ff',
         is_default: true,
+        content_language: 'ja',
       })
       .select()
       .single();
@@ -105,7 +106,7 @@ export function useWorkspaces(user: User | null): UseWorkspacesReturn {
 
   const updateWorkspace = useCallback(async (
     id: string,
-    patch: Partial<Pick<Workspace, 'name' | 'description' | 'niche' | 'color'>>
+    patch: Partial<Pick<Workspace, 'name' | 'description' | 'niche' | 'color' | 'contentLanguage'>>
   ): Promise<void> => {
     const { error } = await supabase
       .from('workspaces')
@@ -114,6 +115,7 @@ export function useWorkspaces(user: User | null): UseWorkspacesReturn {
         description: patch.description,
         niche: patch.niche,
         color: patch.color,
+        content_language: patch.contentLanguage,
       })
       .eq('id', id);
 
@@ -144,13 +146,14 @@ export function useWorkspaces(user: User | null): UseWorkspacesReturn {
 // ── DB row → Workspace ────────────────────────────────────────
 function dbToWorkspace(row: Record<string, unknown>): Workspace {
   return {
-    id:          String(row.id),
-    name:        String(row.name),
-    description: row.description ? String(row.description) : undefined,
-    niche:       row.niche       ? String(row.niche) as Workspace['niche'] : undefined,
-    color:       String(row.color ?? '#00e5ff'),
-    isDefault:   Boolean(row.is_default),
-    createdAt:   String(row.created_at),
-    updatedAt:   String(row.updated_at),
+    id:              String(row.id),
+    name:            String(row.name),
+    description:     row.description ? String(row.description) : undefined,
+    niche:           row.niche ? String(row.niche) as Workspace['niche'] : undefined,
+    color:           String(row.color ?? '#00e5ff'),
+    isDefault:       Boolean(row.is_default),
+    createdAt:       String(row.created_at),
+    updatedAt:       String(row.updated_at),
+    contentLanguage: (row.content_language as ContentLanguage | undefined) ?? 'ja',
   };
 }

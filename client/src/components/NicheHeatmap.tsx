@@ -185,7 +185,7 @@ export default function NicheHeatmap({ keywords, onSelectNiche, activeNiche }: N
         <div style={{ height: mapHeight }}>
           <ResponsiveContainer width="100%" height="100%">
             <Treemap
-              data={data}
+              data={data as unknown as Record<string, unknown>[]}
               dataKey="size"
               aspectRatio={16 / 5}
               onClick={handleTreemapClick}

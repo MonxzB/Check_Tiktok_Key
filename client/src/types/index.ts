@@ -2,11 +2,13 @@
 // types/index.ts — Shared TypeScript types for the entire app
 // NOTE: Field names intentionally match current JS code (not spec aliases)
 //       e.g. kw.keyword (not kw.text), kw.longTailExp (not longTailExpansion)
-//       These will be normalized in Phase 1 when migrating to Supabase.
 // ============================================================
 
 // ── Supabase user re-export ────────────────────────────────────
 export type { User } from '@supabase/supabase-js';
+
+// ── Content Language (Phase 11) ───────────────────────────────
+export type ContentLanguage = 'ja' | 'ko' | 'en' | 'vi';
 
 // ── Niche ─────────────────────────────────────────────────────
 export type Niche =
@@ -102,6 +104,9 @@ export interface Keyword {
 
   // Phase 2+ (workspace support)
   workspaceId?: string;
+
+  // Phase 11: content language
+  contentLanguage?: ContentLanguage;
 }
 
 // ── Seed object (used by expansion engine) ────────────────────
@@ -204,7 +209,7 @@ export interface ToastItem {
 }
 
 // ── Tab IDs ───────────────────────────────────────────────────
-export type TabId = 'keywords' | 'youtube' | 'csv' | 'settings' | 'competitors' | 'gap';
+export type TabId = 'keywords' | 'youtube' | 'csv' | 'settings' | 'competitors' | 'gap' | 'calendar';
 
 // ── Quota tracker ─────────────────────────────────────────────
 export interface QuotaEntry {
@@ -255,6 +260,8 @@ export interface Workspace {
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
+  // Phase 11: content language
+  contentLanguage: ContentLanguage;
 }
 
 // ── Phase 2: Supabase row shapes ──────────────────────────────
@@ -265,6 +272,8 @@ export interface WorkspaceInsert {
   niche?: string;
   color?: string;
   is_default?: boolean;
+  // Phase 11
+  content_language?: ContentLanguage;
 }
 
 /** Supabase `keywords` table row (snake_case, matches DB) */
@@ -292,6 +301,7 @@ export interface KeywordRow {
   sub_keywords: string[];
   api_data: KeywordApiSummary | null;
   metadata: KeywordMetadata | null;
+  content_language: ContentLanguage;
   created_at: string;
   updated_at: string;
 }
@@ -320,6 +330,7 @@ export function rowToKeyword(row: KeywordRow): Keyword {
     apiData: row.api_data,
     metadata: row.metadata,
     workspaceId: row.workspace_id,
+    contentLanguage: (row.content_language ?? 'ja') as ContentLanguage,
   };
 }
 
@@ -328,6 +339,7 @@ export function keywordToRow(
   kw: Keyword,
   workspaceId: string,
   userId: string,
+  contentLanguage: ContentLanguage = 'ja',
 ): Omit<KeywordRow, 'id' | 'created_at' | 'updated_at'> {
   return {
     workspace_id: workspaceId,
@@ -352,6 +364,7 @@ export function keywordToRow(
     sub_keywords: kw.subKeywords,
     api_data: kw.apiData,
     metadata: kw.metadata,
+    content_language: kw.contentLanguage ?? contentLanguage,
   };
 }
 

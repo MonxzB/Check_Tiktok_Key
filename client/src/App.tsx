@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import type { Keyword, KeywordFilters } from './types';
 import Header from './components/Header.js';
 import Tabs from './components/Tabs.js';
@@ -31,16 +31,29 @@ import GapAnalysisTab from './components/GapAnalysisTab.tsx';
 import { usePersonalScoring } from './hooks/usePersonalScoring.ts';
 import { applyPersonalWeights } from './engine/personalizedScoring.ts';
 import type { TabId } from './types';
+// Phase 16: UX Polish
+import { KeywordTableSkeleton, StatsBarSkeleton } from './components/Skeleton.tsx';
+import { NoKeywordsEmptyState } from './components/EmptyState.tsx';
+import { usePersistentState } from './hooks/usePersistentState.ts';
+// Phase 13: Content Calendar — lazy to isolate any potential crashes
+import CalendarErrorBoundary from './components/CalendarErrorBoundary.tsx';
+const ContentCalendarTab = lazy(() => import('./components/ContentCalendarTab.tsx'));
 
 const DEFAULT_FILTERS: KeywordFilters = {
   minScore: 0, niche: '', level: '', intent: '', evergreen: '', risk: '', rec: '',
 };
 
+const VALID_TABS: TabId[] = ['keywords', 'youtube', 'csv', 'settings', 'competitors', 'gap', 'calendar'];
+
 export default function App() {
-  const [activeTab, setActiveTab]   = useState<TabId>('keywords');
+  const [activeTab, setActiveTabRaw] = usePersistentState<TabId>('ytlf_active_tab', 'keywords');
+  // Guard against stale/invalid tab values in localStorage
+  const activeTab_ = VALID_TABS.includes(activeTab) ? activeTab : 'keywords';
+  const setActiveTab = useCallback((tab: TabId) => setActiveTabRaw(tab), [setActiveTabRaw]);
+
   const [selectedKw, setSelectedKw] = useState<Keyword | null>(null);
-  const [showFilter, setShowFilter] = useState(false);
-  const [filters, setFilters]       = useState<KeywordFilters>(DEFAULT_FILTERS);
+  const [showFilter, setShowFilter] = usePersistentState<boolean>('ytlf_show_filter', false);
+  const [filters, setFilters]       = usePersistentState<KeywordFilters>('ytlf_filters', DEFAULT_FILTERS);
 
   const { user }                                              = useAuth();
   const { toasts, toast }                                     = useToast();
@@ -48,11 +61,10 @@ export default function App() {
   const workspaceProps                                        = useWorkspaces(user ?? null);
   const activeWorkspaceId = workspaceProps.activeWorkspace?.id ?? null;
 
-  // Phase 3: workspaceId drives everything
   const {
     keywords, loading: kwLoading, syncStatus, hasMigrationPending, runMigration,
     expand, score, clear, exportCsv, importCsv, updateApiData, snapshots,
-  } = useKeywords(toast, activeWorkspaceId);
+  } = useKeywords(toast, activeWorkspaceId, workspaceProps.activeWorkspace);
 
   const bulk           = useBulkAnalyze(updateApiData, settings, toast);
   const compare        = useCompare();
@@ -72,8 +84,8 @@ export default function App() {
 
   // ── Check YouTube server when switching to YT tab ─────────────
   useEffect(() => {
-    if (activeTab === 'youtube') checkStatus();
-  }, [activeTab, checkStatus]);
+    if (activeTab_ === 'youtube') checkStatus();
+  }, [activeTab_, checkStatus]);
 
   function handleFilterToggle() {
     if (!keywords.length) { toast('Chưa có keyword nào', 'error'); return; }
@@ -93,7 +105,6 @@ export default function App() {
     analyzeKeyword(kw);
   }
 
-  /** Click heatmap cell → set/clear niche filter */
   function handleSelectNiche(niche: string) {
     if (niche) {
       setFilters(f => ({ ...f, niche }));
@@ -103,6 +114,32 @@ export default function App() {
     }
   }
 
+  // Phase 16.9: global keyboard shortcuts + cross-component events
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName;
+      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      if (e.key === 'Escape' && selectedKw) { setSelectedKw(null); return; }
+      if (isInput) return;
+      if (e.key === 'F' && e.shiftKey && activeTab_ === 'keywords' && keywords.length > 0) {
+        e.preventDefault(); handleFilterToggle();
+      }
+      if (e.key === 'r' && activeTab_ === 'keywords' && showFilter) {
+        e.preventDefault(); setFilters(DEFAULT_FILTERS);
+      }
+    }
+    function handleResetFilters() {
+      setFilters(DEFAULT_FILTERS);
+      setShowFilter(false);
+    }
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('ytlf:reset-filters', handleResetFilters);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('ytlf:reset-filters', handleResetFilters);
+    };
+  }, [selectedKw, activeTab_, keywords.length, showFilter]);
+
   const activeFilters = showFilter ? filters : DEFAULT_FILTERS;
   const filteredForExport = keywords.filter(k => {
     if (activeFilters.minScore > 0 && k.longFormScore < activeFilters.minScore) return false;
@@ -111,7 +148,6 @@ export default function App() {
     return true;
   });
 
-  // ── Apply personalized weights when enabled ──────────────────
   const displayKeywords = personalScoring.enabled
     ? keywords.map(kw => ({
         ...kw,
@@ -119,13 +155,14 @@ export default function App() {
       }))
     : keywords;
 
-  // ── Skeleton loading (no flash) ───────────────────────────────
   const showSkeleton = kwLoading && keywords.length === 0;
+
+  const is = (tab: TabId) => activeTab_ === tab ? 'block' : 'none';
 
   return (
     <div className="container">
       <Header workspaceProps={workspaceProps} syncStatus={syncStatus} />
-      <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Tabs activeTab={activeTab_} setActiveTab={setActiveTab} />
 
       {/* Migration banner (one-time) */}
       {hasMigrationPending && activeWorkspaceId && (
@@ -133,13 +170,14 @@ export default function App() {
       )}
 
       {/* Keywords Tab */}
-      <div style={{ display: activeTab === 'keywords' ? 'block' : 'none' }}>
-        <SeedInput onExpand={expand} />
+      <div style={{ display: is('keywords') }}>
+        <SeedInput onExpand={expand} activeWorkspace={workspaceProps.activeWorkspace} />
 
+        {/* 16.5 Proper skeleton */}
         {showSkeleton && (
-          <div style={{ padding: '24px 0', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            <span className="spinner" style={{ width: 14, height: 14 }} />
-            Đang tải keyword từ cloud...
+          <div style={{ marginTop: 8 }}>
+            <StatsBarSkeleton />
+            <KeywordTableSkeleton rows={6} />
           </div>
         )}
 
@@ -150,12 +188,12 @@ export default function App() {
             onExport={() => exportCsv(filteredForExport)}
             onImport={importCsv}
             onClear={handleClear}
+            showFilter={showFilter}
           />
         )}
         {!showSkeleton && hasResults && showFilter && (
           <FilterBar filters={filters} setFilters={setFilters} onReset={() => setFilters(DEFAULT_FILTERS)} />
         )}
-        {/* Phase 8: Niche Heatmap — above StatsBar */}
         {!showSkeleton && hasResults && (
           <NicheHeatmap
             keywords={displayKeywords}
@@ -166,6 +204,7 @@ export default function App() {
         {!showSkeleton && hasResults && <StatsBar keywords={displayKeywords} />}
         {!showSkeleton && hasResults && <PanelGrid keywords={displayKeywords} onSelectKeyword={setSelectedKw} />}
         {!showSkeleton && hasResults && <BranchSection keywords={displayKeywords} />}
+
         {/* Resume bulk job banner */}
         {bulk.hasResumable && bulk.state.status === 'idle' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', marginBottom: 12, background: 'rgba(0,229,255,0.06)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 10, fontSize: '0.84rem' }}>
@@ -173,6 +212,9 @@ export default function App() {
             <button className="btn btn-primary" style={{ padding: '5px 14px', fontSize: '0.8rem' }} onClick={bulk.resumeFromStorage}>▶️ Tiếp tục</button>
           </div>
         )}
+
+        {/* 16.6 Empty state when no keywords and not loading */}
+        {!showSkeleton && !hasResults && <NoKeywordsEmptyState />}
 
         {!showSkeleton && hasResults && (
           <KeywordTable
@@ -187,7 +229,7 @@ export default function App() {
       </div>
 
       {/* YouTube Tab */}
-      <div style={{ display: activeTab === 'youtube' ? 'block' : 'none' }}>
+      <div style={{ display: is('youtube') }}>
         <YoutubeTab
           keywords={keywords}
           refVideos={refVideos}
@@ -213,7 +255,7 @@ export default function App() {
       </div>
 
       {/* CSV / History Tab */}
-      <div style={{ display: activeTab === 'csv' ? 'block' : 'none' }}>
+      <div style={{ display: is('csv') }}>
         <CsvHistoryTab
           keywords={keywords}
           refVideos={refVideos}
@@ -224,7 +266,7 @@ export default function App() {
       </div>
 
       {/* Competitors Tab */}
-      <div style={{ display: activeTab === 'competitors' ? 'block' : 'none' }}>
+      <div style={{ display: is('competitors') }}>
         <CompetitorTab
           tracker={tracker}
           keywords={keywords}
@@ -233,7 +275,7 @@ export default function App() {
       </div>
 
       {/* Gap Analysis Tab */}
-      <div style={{ display: activeTab === 'gap' ? 'block' : 'none' }}>
+      <div style={{ display: is('gap') }}>
         <GapAnalysisTab
           keywords={keywords}
           ytConn={ytConn}
@@ -241,8 +283,21 @@ export default function App() {
         />
       </div>
 
+      {/* Content Calendar Tab — Phase 13 */}
+      <div style={{ display: is('calendar') }}>
+        <CalendarErrorBoundary>
+          <Suspense fallback={
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <span className="spinner" style={{ width: 20, height: 20 }} />
+            </div>
+          }>
+            <ContentCalendarTab keywords={displayKeywords} />
+          </Suspense>
+        </CalendarErrorBoundary>
+      </div>
+
       {/* Settings Tab */}
-      <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
+      <div style={{ display: is('settings') }}>
         <SettingsPanel
           settings={settings}
           onUpdate={updateSettings}
@@ -251,7 +306,7 @@ export default function App() {
         />
       </div>
 
-      {selectedKw && <DetailModal kw={selectedKw} onClose={() => setSelectedKw(null)} onAnalyze={handleAnalyzeKeyword} snapshots={snapshots} personalScoring={personalScoring} />}
+      {selectedKw && <DetailModal kw={selectedKw} onClose={() => setSelectedKw(null)} onAnalyze={handleAnalyzeKeyword} snapshots={snapshots} personalScoring={personalScoring} refVideos={lastKeyword === selectedKw.keyword ? refVideos : []} />}
       <Toast toasts={toasts} />
     </div>
   );

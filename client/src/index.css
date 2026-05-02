@@ -508,3 +508,46 @@ code { font-family: 'Courier New', monospace; background:rgba(0,229,255,0.08); p
 }
 .auth-email { font-size: 0.82rem; color: var(--text-secondary); }
 .auth-logout-btn { padding: 5px 14px !important; font-size: 0.78rem !important; border-radius: 12px !important; }
+
+/* ----- SKELETON (Phase 16.5) ----- */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ----- EMPTY STATE (Phase 16.6) ----- */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 60px 24px;
+  background: var(--glass); border: 1px dashed var(--glass-border);
+  border-radius: var(--radius); margin: 24px 0;
+  animation: fadeIn 0.3s ease;
+}
+.empty-state__icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.8; }
+.empty-state__title { font-size: 1.05rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+.empty-state__desc { font-size: 0.85rem; color: var(--text-muted); max-width: 400px; line-height: 1.6; margin-bottom: 20px; }
+.empty-state__actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+/* ----- KEYBOARD HINT (Phase 16.9) ----- */
+.kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px; padding: 1px 6px; font-size: 0.7rem;
+  font-family: 'Courier New', monospace; color: var(--text-muted);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.1);
+}
+
+/* ----- TOOLTIP (Phase 16) ----- */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: #1a1f2e; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; padding: 5px 10px; font-size: 0.72rem; color: var(--text);
+  white-space: nowrap; pointer-events: none; opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  transform: translateX(-50%) translateY(4px);
+  z-index: 100;
+}
+[data-tooltip]:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+

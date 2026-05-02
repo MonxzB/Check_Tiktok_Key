@@ -1,12 +1,10 @@
 // ============================================================
-// engine/longFormScoring.ts — 8-dimension long-form scoring
+// engine/longFormScoring.ts — 8-dimension long-form scoring (Phase 11: multi-language)
 // ============================================================
 import type { Keyword, Niche } from '../types';
-import {
-  NICHE_HEAT, SEARCH_INTENT_BOOST, TOPIC_DEPTH_SIGNALS,
-  RISKY_MARKERS, EVERGREEN_SIGNALS, TITLE_TEMPLATES, CHAPTER_TEMPLATES,
-  type ChapterType,
-} from './constants.js';
+import type { LanguagePack } from './languages/index';
+import { getLanguagePack } from './languages/index';
+import { NICHE_HEAT } from './constants.js';
 
 const clamp = (v: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, v));
@@ -20,10 +18,18 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+// ── Niche heat (merge global default + pack override) ─────────
+function getNicheHeat(niche: Niche, pack: LanguagePack): number {
+  if (pack.nicheHeatOverride && pack.nicheHeatOverride[niche] !== undefined) {
+    return pack.nicheHeatOverride[niche]!;
+  }
+  return NICHE_HEAT[niche] || 13;
+}
+
 // ── 1. Long-Form Demand Score (0–20) ──────────────────────────
-function scoreDemand(kw: Keyword): number {
+function scoreDemand(kw: Keyword, pack: LanguagePack): number {
   let score = 8;
-  const heat = NICHE_HEAT[kw.niche] || 13;
+  const heat = getNicheHeat(kw.niche, pack);
   score += Math.round((heat - 13) * 1.2);
   if (kw.level === 'Broad') score += 3;
   if (kw.level === 'Mid-tail') score += 2;
@@ -33,23 +39,22 @@ function scoreDemand(kw: Keyword): number {
 }
 
 // ── 2. Search Intent Score (0–15) ────────────────────────────
-function scoreSearchIntent(kw: Keyword): number {
+function scoreSearchIntent(kw: Keyword, pack: LanguagePack): number {
   let score = 5;
   const kwLower = kw.keyword.toLowerCase();
   let boostCount = 0;
-  for (const boost of SEARCH_INTENT_BOOST) {
-    if (kwLower.includes(boost) || kw.keyword.includes(boost)) boostCount++;
+  for (const boost of pack.searchIntentBoost) {
+    if (kwLower.includes(boost.toLowerCase()) || kw.keyword.includes(boost)) boostCount++;
   }
   score += Math.min(boostCount * 3, 10);
   return clamp(score, 0, 15);
 }
 
 // ── 3. Topic Depth Score (0–15) ───────────────────────────────
-function scoreTopicDepth(kw: Keyword): number {
+function scoreTopicDepth(kw: Keyword, pack: LanguagePack): number {
   let score = 6;
-  const kwText = kw.keyword;
-  for (const signal of TOPIC_DEPTH_SIGNALS) {
-    if (kwText.includes(signal)) { score += 4; break; }
+  for (const signal of pack.topicDepthSignals) {
+    if (kw.keyword.includes(signal)) { score += 4; break; }
   }
   const deepNiches: Niche[] = ['AI / ChatGPT', 'Excel / Office', 'Lập trình', 'Học tập', 'Kinh doanh'];
   if (deepNiches.includes(kw.niche)) score += 3;
@@ -71,11 +76,10 @@ function scoreSmallChannel(kw: Keyword): number {
 }
 
 // ── 5. Evergreen Score (0–10) ────────────────────────────────
-function scoreEvergreen(kw: Keyword): number {
+function scoreEvergreen(kw: Keyword, pack: LanguagePack): number {
   let score = 5;
-  const kwText = kw.keyword;
-  for (const signal of EVERGREEN_SIGNALS) {
-    if (kwText.includes(signal)) { score += 3; break; }
+  for (const signal of pack.evergreenMarkers) {
+    if (kw.keyword.includes(signal)) { score += 3; break; }
   }
   const trendyNiches: Niche[] = ['AI / ChatGPT'];
   const evergreenNiches: Niche[] = ['Excel / Office', 'Học tập', 'Tiết kiệm', 'Tâm lý học'];
@@ -85,9 +89,10 @@ function scoreEvergreen(kw: Keyword): number {
 }
 
 // ── 6. Series Potential Score (0–10) ─────────────────────────
-function scoreSeriesPotential(kw: Keyword): number {
+function scoreSeriesPotential(kw: Keyword, pack: LanguagePack): number {
   let score = 4;
-  const seriesSignals = ['ランキング', 'おすすめ', 'やり方', '比較', '活用法', '使い方'];
+  // Use pack suffixes as series signals
+  const seriesSignals = pack.longFormSuffixes.slice(0, 6);
   for (const s of seriesSignals) {
     if (kw.keyword.includes(s)) { score += 3; break; }
   }
@@ -107,10 +112,10 @@ function scoreLongTailExpansion(kw: Keyword, allKws: Keyword[]): number {
 }
 
 // ── 8. Low Risk Score (0–5) ──────────────────────────────────
-function scoreLowRisk(kw: Keyword): number {
+function scoreLowRisk(kw: Keyword, pack: LanguagePack): number {
   let score = 5;
   const kwLower = kw.keyword.toLowerCase();
-  for (const marker of RISKY_MARKERS) {
+  for (const marker of pack.riskyMarkers) {
     if (kw.keyword.includes(marker) || kwLower.includes(marker.toLowerCase())) {
       score -= 4;
       break;
@@ -130,23 +135,26 @@ export function getRecommendation(score: number): string {
 }
 
 // ── Chapter Suggestions ───────────────────────────────────────
-function guessChapterType(kw: Keyword): ChapterType {
+type ChapterType = 'tutorial' | 'comparison' | 'ranking' | 'default';
+
+function guessChapterType(kw: Keyword, pack: LanguagePack): ChapterType {
   const k = kw.keyword;
-  if (/比較/.test(k)) return 'comparison';
-  if (/ランキング|TOP/.test(k)) return 'ranking';
-  if (/使い方|やり方|方法|手順|ガイド|入門/.test(k)) return 'tutorial';
+  // Language-agnostic heuristics
+  if (/比較|비교|comparison|compare/i.test(k)) return 'comparison';
+  if (/ランキング|TOP|랭킹|ranking|best \d/i.test(k)) return 'ranking';
+  if (pack.topicDepthSignals.some(s => k.includes(s))) return 'tutorial';
   return 'default';
 }
 
-export function generateChapters(kw: Keyword): string[] {
-  const type = guessChapterType(kw);
-  const base = CHAPTER_TEMPLATES[type] || CHAPTER_TEMPLATES.default;
+export function generateChapters(kw: Keyword, pack: LanguagePack): string[] {
+  const type = guessChapterType(kw, pack);
+  const base = pack.chapterTemplates[type] || pack.chapterTemplates.default;
   return base.map(ch => ch.replace('{kw}', kw.keyword));
 }
 
 // ── Title Suggestions ─────────────────────────────────────────
-export function generateTitles(kw: Keyword): string[] {
-  return shuffle(TITLE_TEMPLATES).slice(0, 3).map(t => t.replace('{kw}', kw.keyword));
+export function generateTitles(kw: Keyword, pack: LanguagePack): string[] {
+  return shuffle(pack.titleTemplates).slice(0, 3).map(t => t.replace('{kw}', kw.keyword));
 }
 
 // ── Reason Text ───────────────────────────────────────────────
@@ -164,18 +172,31 @@ function generateReason(kw: Keyword): string {
   return parts.join(', ') + '.';
 }
 
-// ── Main Scoring Function ────────────────────────────────────
-export function scoreLongFormKeywords(keywords: Keyword[]): Keyword[] {
+// ── Main Scoring Function (with LanguagePack) ────────────────
+export function scoreLongFormKeywords(
+  keywords: Keyword[],
+  packOrCode?: LanguagePack | string,
+): Keyword[] {
+  // Resolve pack: accept LanguagePack object, language code string, or default JA
+  let pack: LanguagePack;
+  if (!packOrCode) {
+    pack = getLanguagePack('ja');
+  } else if (typeof packOrCode === 'string') {
+    pack = getLanguagePack(packOrCode as Parameters<typeof getLanguagePack>[0]);
+  } else {
+    pack = packOrCode;
+  }
+
   return keywords.map(kw => {
     const scored: Keyword = { ...kw };
-    scored.demand          = scoreDemand(scored);
-    scored.searchIntent    = scoreSearchIntent(scored);
-    scored.topicDepth      = scoreTopicDepth(scored);
+    scored.demand          = scoreDemand(scored, pack);
+    scored.searchIntent    = scoreSearchIntent(scored, pack);
+    scored.topicDepth      = scoreTopicDepth(scored, pack);
     scored.smallChannel    = scoreSmallChannel(scored);
-    scored.evergreen       = scoreEvergreen(scored);
-    scored.seriesPotential = scoreSeriesPotential(scored);
+    scored.evergreen       = scoreEvergreen(scored, pack);
+    scored.seriesPotential = scoreSeriesPotential(scored, pack);
     scored.longTailExp     = scoreLongTailExpansion(scored, keywords);
-    scored.lowRisk         = scoreLowRisk(scored);
+    scored.lowRisk         = scoreLowRisk(scored, pack);
 
     scored.longFormScore =
       scored.demand + scored.searchIntent + scored.topicDepth +
@@ -184,8 +205,8 @@ export function scoreLongFormKeywords(keywords: Keyword[]): Keyword[] {
 
     scored.recommendation = getRecommendation(scored.longFormScore);
     scored.reason         = generateReason(scored);
-    scored.chapters       = generateChapters(scored);
-    scored.suggestedTitles = generateTitles(scored);
+    scored.chapters       = generateChapters(scored, pack);
+    scored.suggestedTitles = generateTitles(scored, pack);
     scored.subKeywords    = keywords
       .filter(k => k.keyword !== scored.keyword && k.keyword.startsWith(scored.keyword))
       .slice(0, 5)

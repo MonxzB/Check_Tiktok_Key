@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { Workspace, WorkspaceInsert, Niche } from '../types';
+import type { Workspace, WorkspaceInsert, Niche, ContentLanguage } from '../types';
+import { LANGUAGE_OPTIONS } from '../engine/languages/index.js';
 
 const NICHE_OPTIONS: Niche[] = [
   'AI / ChatGPT', 'Excel / Office', 'Lập trình', 'Tiết kiệm', 'Công việc',
@@ -24,8 +25,12 @@ export default function WorkspaceModal({ mode, initial, onSave, onClose }: Works
   const [description, setDesc]    = useState(initial?.description ?? '');
   const [niche, setNiche]         = useState<string>(initial?.niche ?? '');
   const [color, setColor]         = useState(initial?.color ?? '#00e5ff');
+  const [lang, setLang]           = useState<ContentLanguage>(initial?.contentLanguage ?? 'ja');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
+
+  const isEdit = mode === 'edit';
+  const hasKeywords = isEdit; // Disable language change on edit to keep data consistent
 
   // Close on Escape
   useEffect(() => {
@@ -45,6 +50,7 @@ export default function WorkspaceModal({ mode, initial, onSave, onClose }: Works
         description: description.trim() || undefined,
         niche: niche || undefined,
         color,
+        content_language: lang,
       });
       onClose();
     } catch (err) {
@@ -54,13 +60,24 @@ export default function WorkspaceModal({ mode, initial, onSave, onClose }: Works
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid var(--glass-border)',
+    borderRadius: 8,
+    color: 'var(--text)',
+    padding: '9px 14px',
+    fontSize: '0.9rem',
+    width: '100%',
+    boxSizing: 'border-box',
+  };
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)', borderRadius: 12, padding: 28, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
+        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)', borderRadius: 12, padding: 28, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
         onClick={e => e.stopPropagation()}
       >
         <h2 style={{ margin: '0 0 20px', fontSize: '1.1rem', color: 'var(--text)' }}>
@@ -73,8 +90,8 @@ export default function WorkspaceModal({ mode, initial, onSave, onClose }: Works
             <label>Tên workspace *</label>
             <input
               type="text" value={name} onChange={e => setName(e.target.value)}
-              placeholder="Ví dụ: AI Tools Research" disabled={loading}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', borderRadius: 8, color: 'var(--text)', padding: '9px 14px', fontSize: '0.9rem', width: '100%', boxSizing: 'border-box' }}
+              placeholder="Ví dụ: AI Tools Japan" disabled={loading}
+              style={inputStyle}
             />
           </div>
 
@@ -84,8 +101,47 @@ export default function WorkspaceModal({ mode, initial, onSave, onClose }: Works
             <input
               type="text" value={description} onChange={e => setDesc(e.target.value)}
               placeholder="Mô tả ngắn về mục đích workspace" disabled={loading}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', borderRadius: 8, color: 'var(--text)', padding: '9px 14px', fontSize: '0.9rem', width: '100%', boxSizing: 'border-box' }}
+              style={inputStyle}
             />
+          </div>
+
+          {/* ── Language selector (Phase 11) ─────────────────── */}
+          <div className="auth-field">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              🌐 Ngôn ngữ nội dung
+              {hasKeywords && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 6 }}>
+                  Không thể đổi sau khi tạo
+                </span>
+              )}
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {LANGUAGE_OPTIONS.map(opt => (
+                <button
+                  key={opt.code}
+                  type="button"
+                  disabled={loading || hasKeywords}
+                  onClick={() => setLang(opt.code)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 12px', borderRadius: 8, cursor: hasKeywords ? 'not-allowed' : 'pointer',
+                    border: lang === opt.code ? '2px solid var(--accent)' : '2px solid var(--glass-border)',
+                    background: lang === opt.code ? 'rgba(0,229,255,0.08)' : 'rgba(255,255,255,0.03)',
+                    color: 'var(--text)', fontSize: '0.85rem', fontWeight: lang === opt.code ? 600 : 400,
+                    transition: 'all 0.15s', opacity: hasKeywords ? 0.6 : 1,
+                  }}
+                >
+                  <span style={{ fontSize: '1.1rem' }}>{opt.flag}</span>
+                  {opt.name}
+                  {lang === opt.code && <span style={{ marginLeft: 'auto', color: 'var(--accent)' }}>✓</span>}
+                </button>
+              ))}
+            </div>
+            {hasKeywords && (
+              <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                💡 Để thay đổi ngôn ngữ, hãy tạo workspace mới.
+              </p>
+            )}
           </div>
 
           {/* Niche */}
@@ -93,7 +149,7 @@ export default function WorkspaceModal({ mode, initial, onSave, onClose }: Works
             <label>Niche chính</label>
             <select
               value={niche} onChange={e => setNiche(e.target.value)} disabled={loading}
-              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)', borderRadius: 8, color: 'var(--text)', padding: '9px 14px', fontSize: '0.9rem', width: '100%', cursor: 'pointer' }}
+              style={{ ...inputStyle, cursor: 'pointer' }}
             >
               <option value="">— Chọn niche —</option>
               {NICHE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}

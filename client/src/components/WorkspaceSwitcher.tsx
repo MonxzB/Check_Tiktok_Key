@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Workspace, WorkspaceInsert } from '../types';
 import WorkspaceModal from './WorkspaceModal.js';
 import type { UseWorkspacesReturn } from '../hooks/useWorkspaces.js';
+import { LANGUAGE_OPTIONS } from '../engine/languages/index.js';
 
 interface WorkspaceSwitcherProps {
   workspaces: Workspace[];
@@ -77,6 +78,12 @@ export default function WorkspaceSwitcher({
           <span style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {activeWorkspace?.name ?? 'Chọn workspace'}
           </span>
+          {/* Language flag */}
+          {activeWorkspace?.contentLanguage && (
+            <span style={{ fontSize: '0.85rem', flexShrink: 0 }}>
+              {LANGUAGE_OPTIONS.find(o => o.code === activeWorkspace.contentLanguage)?.flag}
+            </span>
+          )}
           {activeWorkspace?.niche && (
             <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', padding: '1px 6px', borderRadius: 8, color: 'var(--text-muted)', flexShrink: 0 }}>
               {activeWorkspace.niche}
@@ -110,7 +117,14 @@ export default function WorkspaceSwitcher({
                 >
                   <span style={{ width: 10, height: 10, borderRadius: '50%', background: ws.color, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ws.name}</div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      {ws.name}
+                      {ws.contentLanguage && (
+                        <span style={{ fontSize: '0.8rem' }} title={LANGUAGE_OPTIONS.find(o => o.code === ws.contentLanguage)?.name}>
+                          {LANGUAGE_OPTIONS.find(o => o.code === ws.contentLanguage)?.flag}
+                        </span>
+                      )}
+                    </div>
                     {ws.niche && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{ws.niche}</div>}
                   </div>
                   {activeWorkspace?.id === ws.id && <span style={{ color: 'var(--accent)', fontSize: '0.78rem' }}>✓</span>}

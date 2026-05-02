@@ -1,24 +1,36 @@
-import React, { useState } from 'react';
-import type { SeedObject } from '../types';
-import { DEFAULT_SEEDS } from '../engine/constants.js';
+import React, { useState, useEffect } from 'react';
+import type { Workspace } from '../types';
+import { getLanguagePack, LANGUAGE_OPTIONS } from '../engine/languages/index.js';
 
 interface SeedInputProps {
   onExpand: (text: string) => void;
+  activeWorkspace?: Workspace | null;
 }
 
-export default function SeedInput({ onExpand }: SeedInputProps) {
+export default function SeedInput({ onExpand, activeWorkspace }: SeedInputProps) {
   const [seedText, setSeedText] = useState('');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
 
-  function toggleTag(seed: SeedObject) {
+  const lang = activeWorkspace?.contentLanguage ?? 'ja';
+  const pack = getLanguagePack(lang);
+  const langOpt = LANGUAGE_OPTIONS.find(o => o.code === lang);
+  const seeds = pack.defaultSeeds;
+
+  // Reset active tags when language changes
+  useEffect(() => {
+    setActiveTags(new Set());
+    setSeedText('');
+  }, [lang]);
+
+  function toggleTag(text: string) {
     const newActive = new Set(activeTags);
     const lines = new Set(seedText.split('\n').map(l => l.trim()).filter(Boolean));
-    if (newActive.has(seed.jp)) {
-      newActive.delete(seed.jp);
-      lines.delete(seed.jp);
+    if (newActive.has(text)) {
+      newActive.delete(text);
+      lines.delete(text);
     } else {
-      newActive.add(seed.jp);
-      lines.add(seed.jp);
+      newActive.add(text);
+      lines.add(text);
     }
     setActiveTags(newActive);
     setSeedText([...lines].join('\n'));
@@ -26,20 +38,38 @@ export default function SeedInput({ onExpand }: SeedInputProps) {
 
   function addAllSeeds() {
     const lines = new Set(seedText.split('\n').map(l => l.trim()).filter(Boolean));
-    DEFAULT_SEEDS.forEach(s => lines.add(s.jp));
-    setActiveTags(new Set(DEFAULT_SEEDS.map(s => s.jp)));
+    seeds.forEach(s => lines.add(s.text));
+    setActiveTags(new Set(seeds.map(s => s.text)));
     setSeedText([...lines].join('\n'));
   }
 
+  const placeholders: Record<string, string> = {
+    ja: 'Nhập keyword tiếng Nhật, mỗi dòng 1 từ\nVí dụ:\nChatGPT 使い方\nExcel 自動化\n節約術',
+    ko: 'Nhập keyword tiếng Hàn, mỗi dòng 1 từ\nVí dụ:\nChatGPT 사용법\n엑셀 자동화\n절약 방법',
+    en: 'Enter English keywords, one per line\nExample:\nChatGPT tutorial\nExcel automation\nhow to save money',
+    vi: 'Nhập keyword tiếng Việt, mỗi dòng 1 từ\nVí dụ:\nChatGPT hướng dẫn\nExcel tự động hóa\ncách tiết kiệm tiền',
+  };
+
   return (
     <section className="card">
-      <h2><span className="icon">🌱</span> Nhập Seed Keyword (Long-form)</h2>
+      <h2>
+        <span className="icon">🌱</span> Nhập Seed Keyword (Long-form)
+        {langOpt && (
+          <span style={{
+            marginLeft: 10, fontSize: '0.78rem', fontWeight: 500,
+            background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.2)',
+            padding: '2px 10px', borderRadius: 20, color: 'var(--accent)',
+          }}>
+            {langOpt.flag} {langOpt.name}
+          </span>
+        )}
+      </h2>
       <div className="seed-area">
         <div>
           <textarea
             value={seedText}
             onChange={e => setSeedText(e.target.value)}
-            placeholder={"Nhập keyword tiếng Nhật, mỗi dòng 1 từ\nVí dụ:\nChatGPT 使い方\nExcel 自動化\n節約術"}
+            placeholder={placeholders[lang] ?? placeholders.ja}
             rows={6}
           />
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
@@ -47,16 +77,18 @@ export default function SeedInput({ onExpand }: SeedInputProps) {
           </p>
         </div>
         <div className="seed-library">
-          <h3>📚 Seed mặc định (long-form)</h3>
+          <h3>
+            📚 Seed mặc định ({langOpt?.flag} {langOpt?.name})
+          </h3>
           <div className="seed-tags">
-            {DEFAULT_SEEDS.map(s => (
+            {seeds.map(s => (
               <span
-                key={s.jp}
-                className={`seed-tag ${activeTags.has(s.jp) ? 'active' : ''}`}
+                key={s.text}
+                className={`seed-tag ${activeTags.has(s.text) ? 'active' : ''}`}
                 title={`${s.vi} — ${s.niche}`}
-                onClick={() => toggleTag(s)}
+                onClick={() => toggleTag(s.text)}
               >
-                {s.jp}
+                {s.text}
               </span>
             ))}
           </div>

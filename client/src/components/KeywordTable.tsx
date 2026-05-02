@@ -7,6 +7,8 @@ import type { UseCompareReturn } from '../hooks/useCompare.ts';
 import BulkAnalyzeModal from './BulkAnalyzeModal.tsx';
 import CompareModal from './CompareModal.tsx';
 import { calculateTrend } from '../engine/trendDetection.ts';
+import { NoResultsFilterEmptyState } from './EmptyState.tsx';
+import { usePersistentState } from '../hooks/usePersistentState.ts';
 
 const PAGE_SIZE = 50;
 
@@ -54,12 +56,13 @@ interface KeywordTableProps {
 }
 
 export default function KeywordTable({ keywords, filters, onSelectKeyword, onAnalyzeKeyword, bulk, compare, trendBadges }: KeywordTableProps) {
-  const [sortCol, setSortCol] = useState('longFormScore');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [sortCol, setSortCol] = usePersistentState('ytlf_sort_col', 'longFormScore');
+  const [sortDir, setSortDir] = usePersistentState<'asc' | 'desc'>('ytlf_sort_dir', 'desc');
   const [page, setPage]       = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
+  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 0);
 
   function handleSort(col: string) {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -270,6 +273,16 @@ export default function KeywordTable({ keywords, filters, onSelectKeyword, onAna
             </tbody>
           </table>
         </div>
+
+        {/* 16.6 Empty state when filter yields 0 results */}
+        {filtered.length === 0 && hasActiveFilters && (
+          <NoResultsFilterEmptyState
+            onReset={() => {
+              // Dispatch to App via a custom DOM event — simplest cross-component communication
+              document.dispatchEvent(new CustomEvent('ytlf:reset-filters'));
+            }}
+          />
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
