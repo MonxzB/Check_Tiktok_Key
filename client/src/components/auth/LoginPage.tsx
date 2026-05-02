@@ -66,7 +66,7 @@ export default function LoginPage({ onGoSignup, onGoForgot }: LoginPageProps) {
 
         <div className="auth-links">
           <button className="auth-link" onClick={onGoForgot}>Quên mật khẩu?</button>
-          <span style={{ color: 'var(--text-muted)' }}>·</span>
+          <span className="text-text-muted">·</span>
           <button className="auth-link" onClick={onGoSignup}>Tạo tài khoản mới</button>
         </div>
       </div>

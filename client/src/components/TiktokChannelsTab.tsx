@@ -101,30 +101,30 @@ function AddChannelModal({ onClose, onSave, vaultKey }: AddModalProps) {
           {/* Name + Username */}
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
-              <label className="block text-[0.82rem] font-semibold mb-1.5">Tên channel *</label>
-              <input className="w-full box-border" value={channelName} onChange={e => setChannelName(e.target.value)} placeholder="My TikTok Channel" required />
+              <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Tên channel *</label>
+              <input className="field-input" value={channelName} onChange={e => setChannelName(e.target.value)} placeholder="My TikTok Channel" required />
             </div>
             <div className="min-w-0">
-              <label className="block text-[0.82rem] font-semibold mb-1.5">@Username *</label>
-              <input className="w-full box-border" value={username} onChange={e => setUsername(e.target.value)} placeholder="@handle" required />
+              <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">@Username *</label>
+              <input className="field-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="@handle" required />
             </div>
           </div>
 
           {/* URL */}
           <div>
-            <label className="block text-[0.82rem] font-semibold mb-1.5">Channel URL</label>
-            <input className="w-full box-border" value={channelUrl} onChange={e => setChannelUrl(e.target.value)} placeholder="https://www.tiktok.com/@handle" />
+            <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Channel URL</label>
+            <input className="field-input" value={channelUrl} onChange={e => setChannelUrl(e.target.value)} placeholder="https://www.tiktok.com/@handle" />
           </div>
 
           {/* Niche + Lang + Status */}
           <div className="grid grid-cols-3 gap-3">
             <div className="min-w-0">
-              <label className="block text-[0.82rem] font-semibold mb-1.5">Niche</label>
-              <input className="w-full box-border" value={niche} onChange={e => setNiche(e.target.value)} placeholder="AI, Finance…" />
+              <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Niche</label>
+              <input className="field-input" value={niche} onChange={e => setNiche(e.target.value)} placeholder="AI, Finance…" />
             </div>
             <div className="min-w-0">
-              <label className="block text-[0.82rem] font-semibold mb-1.5">Ngôn ngữ</label>
-              <select className="w-full box-border" value={language} onChange={e => setLanguage(e.target.value as typeof language)}>
+              <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Ngôn ngữ</label>
+              <select className="field-select" value={language} onChange={e => setLanguage(e.target.value as typeof language)}>
                 <option value="ja">🇯🇵 Japanese</option>
                 <option value="ko">🇰🇷 Korean</option>
                 <option value="en">🇺🇸 English</option>
@@ -133,8 +133,8 @@ function AddChannelModal({ onClose, onSave, vaultKey }: AddModalProps) {
               </select>
             </div>
             <div className="min-w-0">
-              <label className="block text-[0.82rem] font-semibold mb-1.5">Status</label>
-              <select className="w-full box-border" value={status} onChange={e => setStatus(e.target.value as TiktokChannelStatus)}>
+              <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Status</label>
+              <select className="field-select" value={status} onChange={e => setStatus(e.target.value as TiktokChannelStatus)}>
                 {Object.entries(STATUS_BADGE).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
@@ -142,14 +142,14 @@ function AddChannelModal({ onClose, onSave, vaultKey }: AddModalProps) {
 
           {/* Followers */}
           <div className="max-w-[200px]">
-            <label className="block text-[0.82rem] font-semibold mb-1.5">Followers hiện tại</label>
-            <input className="w-full box-border" type="number" value={followers} onChange={e => setFollowers(e.target.value)} placeholder="0" min="0" />
+            <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Followers hiện tại</label>
+            <input className="field-input" type="number" value={followers} onChange={e => setFollowers(e.target.value)} placeholder="0" min="0" />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-[0.82rem] font-semibold mb-1.5">Notes</label>
-            <textarea className="w-full box-border resize-y" value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Ghi chú về strategy, kế hoạch…" />
+            <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Notes</label>
+            <textarea className="field-input resize-y" value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Ghi chú về strategy, kế hoạch…" />
           </div>
 
           {/* Credentials */}
@@ -160,13 +160,13 @@ function AddChannelModal({ onClose, onSave, vaultKey }: AddModalProps) {
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="min-w-0">
-                <label className="block text-[0.82rem] mb-1.5">Email đăng nhập</label>
-                <input className="w-full box-border" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="account@email.com" autoComplete="off" />
+                <label className="block text-[0.82rem] mb-1.5 text-text-secondary">Email đăng nhập</label>
+                <input className="field-input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="account@email.com" autoComplete="off" />
               </div>
               <div className="min-w-0">
-                <label className="block text-[0.82rem] mb-1.5">Password</label>
+                <label className="block text-[0.82rem] mb-1.5 text-text-secondary">Password</label>
                 <div className="relative w-full">
-                  <input className="w-full box-border pr-10" type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
+                  <input className="field-input pr-10" type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" />
                   <button type="button" onClick={() => setShowPw(s=>!s)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-base text-text-muted p-0">
                     {showPw ? '🙈' : '👁️'}
@@ -283,13 +283,15 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
         <input
           placeholder="🔍 Tìm channel, username, niche…"
           value={search} onChange={e => setSearch(e.target.value)}
-          className="box-border" style={{ flex: '1 1 200px', maxWidth: 320 }}
+          className="field-input" style={{ flex: '1 1 200px', maxWidth: 320, width: 'auto' }}
         />
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ minWidth: 130 }}>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+          className="field-select" style={{ minWidth: 130, width: 'auto' }}>
           <option value="">Tất cả status</option>
           {Object.entries(STATUS_BADGE).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
-        <select value={filterLang} onChange={e => setFilterLang(e.target.value)} style={{ minWidth: 120 }}>
+        <select value={filterLang} onChange={e => setFilterLang(e.target.value)}
+          className="field-select" style={{ minWidth: 120, width: 'auto' }}>
           <option value="">Tất cả ngôn ngữ</option>
           <option value="ja">🇯🇵 Japanese</option>
           <option value="ko">🇰🇷 Korean</option>

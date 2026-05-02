@@ -12,7 +12,7 @@ import BranchSection from './components/BranchSection.js';
 import KeywordTable from './components/KeywordTable.js';
 import DetailModal from './components/DetailModal.js';
 import YoutubeTab from './components/YoutubeTab.js';
-import CsvHistoryTab from './components/CsvHistoryTab.js';
+
 import SettingsPanel from './components/SettingsPanel.js';
 import MigrationBanner from './components/MigrationBanner.js';
 import CompetitorTab from './components/CompetitorTab.tsx';
@@ -37,9 +37,7 @@ import { KeywordTableSkeleton, StatsBarSkeleton } from './components/Skeleton.ts
 import { NoKeywordsEmptyState } from './components/EmptyState.tsx';
 import { usePersistentState } from './hooks/usePersistentState.ts';
 import { wsKey } from './engine/storageKeys.ts';
-// Phase 13: Content Calendar — lazy to isolate any potential crashes
-import CalendarErrorBoundary from './components/CalendarErrorBoundary.tsx';
-const ContentCalendarTab = lazy(() => import('./components/ContentCalendarTab.tsx'));
+
 // Phase 17: Trending popup
 import TrendingKeywordsModal from './components/TrendingKeywordsModal.tsx';
 import { useTrendingKeywords } from './hooks/useTrendingKeywords.ts';
@@ -54,7 +52,7 @@ const DEFAULT_FILTERS: KeywordFilters = {
   minScore: 0, niche: '', level: '', intent: '', evergreen: '', risk: '', rec: '',
 };
 
-const VALID_TABS: TabId[] = ['keywords', 'youtube', 'csv', 'settings', 'competitors', 'gap', 'calendar', 'tiktok'];
+const VALID_TABS: TabId[] = ['keywords', 'youtube', 'settings', 'competitors', 'gap', 'tiktok'];
 
 export default function App() {
   // ── Auth + workspace MUST come first — other hooks depend on these IDs ──
@@ -200,7 +198,7 @@ export default function App() {
   return (
     <div className="container">
       <Header workspaceProps={workspaceProps} syncStatus={syncStatus} />
-      <Tabs activeTab={activeTab_} setActiveTab={setActiveTab} hideCalendar={settings.hideCalendar} />
+      <Tabs activeTab={activeTab_} setActiveTab={setActiveTab} />
 
       {/* Migration banner (one-time) */}
       {hasMigrationPending && activeWorkspaceId && (
@@ -293,17 +291,7 @@ export default function App() {
         />
       </div>
 
-      {/* CSV / History Tab */}
-      <div style={{ display: is('csv') }}>
-        <CsvHistoryTab
-          keywords={keywords}
-          refVideos={refVideos}
-          refChannels={refChannels}
-          onImport={importCsv}
-          toast={toast}
-          personalScoringEnabled={personalScoring.enabled}
-        />
-      </div>
+
 
       {/* Competitors Tab */}
       <div style={{ display: is('competitors') }}>
@@ -324,18 +312,7 @@ export default function App() {
         />
       </div>
 
-      {/* Content Calendar Tab — Phase 13 */}
-      <div style={{ display: is('calendar') }}>
-        <CalendarErrorBoundary>
-          <Suspense fallback={
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <span className="spinner" style={{ width: 20, height: 20 }} />
-            </div>
-          }>
-            <ContentCalendarTab keywords={displayKeywords} workspaceId={activeWorkspaceId} />
-          </Suspense>
-        </CalendarErrorBoundary>
-      </div>
+
 
       {/* TikTok Channels Tab — Phase 18 */}
       <div style={{ display: is('tiktok') }}>

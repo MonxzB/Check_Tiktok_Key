@@ -36,11 +36,11 @@ export default function SignupPage({ onGoLogin }: SignupPageProps) {
 
   if (done) return (
     <div className="auth-page">
-      <div className="auth-card" style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem', marginBottom: 12 }}>📧</div>
-        <h2 style={{ color: 'var(--green)', marginBottom: 8 }}>Kiểm tra email của bạn!</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.7 }}>
-          Chúng tôi đã gửi link xác nhận đến <strong style={{ color: 'var(--accent)' }}>{email}</strong>.
+      <div className="auth-card text-center">
+        <div className="text-5xl mb-3">📧</div>
+        <h2 className="text-green-400 mb-2">Kiểm tra email của bạn!</h2>
+        <p className="text-text-secondary mb-6 leading-relaxed">
+          Chúng tôi đã gửi link xác nhận đến <strong className="text-accent">{email}</strong>.
           <br />Bấm vào link trong email để kích hoạt tài khoản.
         </p>
         <button className="btn btn-primary auth-btn" onClick={onGoLogin}>Quay lại đăng nhập</button>
@@ -83,7 +83,7 @@ export default function SignupPage({ onGoLogin }: SignupPageProps) {
         </form>
 
         <div className="auth-links">
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Đã có tài khoản?</span>
+          <span className="text-text-muted text-[0.85rem]">Đã có tài khoản?</span>
           <button className="auth-link" onClick={onGoLogin}>Đăng nhập ngay</button>
         </div>
       </div>

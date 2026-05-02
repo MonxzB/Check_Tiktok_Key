@@ -1,146 +1,87 @@
-// ============================================================
-// components/MonetizationTab.tsx — Phase 14: Monetization Score
-// ============================================================
 import React, { useMemo } from 'react';
 import type { Keyword } from '../types';
 import type { ContentLanguage } from '../engine/languages/index';
 import { calculateMonetizationScore } from '../engine/monetizationScore.ts';
 import type { MonetizationDimension, MonetizationResult } from '../engine/monetizationScore.ts';
 
-interface MonetizationTabProps {
-  keyword: Keyword;
-  lang?: ContentLanguage;
-}
+interface MonetizationTabProps { keyword: Keyword; lang?: ContentLanguage; }
 
-// ── Tier Badge ────────────────────────────────────────────────
 function TierBadge({ tier, color }: { tier: string; color: string }) {
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-    }}>
-      <div style={{
-        width: 64, height: 64, borderRadius: '50%',
-        background: `${color}20`,
-        border: `3px solid ${color}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '1.8rem', fontWeight: 900, color,
-        boxShadow: `0 0 20px ${color}40`,
-        transition: 'all 0.3s',
-      }}>
+    <div className="flex flex-col items-center gap-1">
+      <div className="w-16 h-16 rounded-full flex items-center justify-center text-[1.8rem] font-black"
+        style={{ background: `${color}20`, border: `3px solid ${color}`, color, boxShadow: `0 0 20px ${color}40` }}>
         {tier}
       </div>
-      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Tier</span>
+      <span className="text-[0.68rem] text-text-muted">Tier</span>
     </div>
   );
 }
 
-// ── Score Circle ──────────────────────────────────────────────
 function ScoreCircle({ score, color }: { score: number; color: string }) {
-  const r = 28;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (score / 100) * circ;
+  const r = 28, circ = 2 * Math.PI * r, offset = circ - (score / 100) * circ;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+    <div className="flex flex-col items-center gap-1">
       <svg width={72} height={72} viewBox="0 0 72 72">
         <circle cx={36} cy={36} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={7} />
-        <circle
-          cx={36} cy={36} r={r} fill="none"
-          stroke={color} strokeWidth={7}
-          strokeDasharray={circ}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 36px', transition: 'stroke-dashoffset 0.6s' }}
-        />
+        <circle cx={36} cy={36} r={r} fill="none" stroke={color} strokeWidth={7}
+          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+          style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 36px', transition: 'stroke-dashoffset 0.6s' }} />
         <text x={36} y={40} textAnchor="middle" fontSize={15} fontWeight={700} fill={color}>{score}</text>
       </svg>
-      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Monetization</span>
+      <span className="text-[0.68rem] text-text-muted">Monetization</span>
     </div>
   );
 }
 
-// ── Dimension Bar ─────────────────────────────────────────────
 function DimensionBar({ dim }: { dim: MonetizationDimension }) {
-  const barColor = dim.value >= 70 ? '#4ade80'
-    : dim.value >= 50 ? '#facc15'
-    : dim.value >= 30 ? '#fb923c'
-    : '#f87171';
-
+  const barColor = dim.value >= 70 ? '#4ade80' : dim.value >= 50 ? '#facc15' : dim.value >= 30 ? '#fb923c' : '#f87171';
   return (
-    <div title={dim.tip} style={{ cursor: 'help' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{dim.label}</span>
-        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: barColor }}>{dim.value}</span>
+    <div title={dim.tip} className="cursor-help">
+      <div className="flex justify-between mb-1">
+        <span className="text-[0.78rem]">{dim.label}</span>
+        <span className="text-[0.78rem] font-semibold" style={{ color: barColor }}>{dim.value}</span>
       </div>
-      <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
-        <div style={{
-          height: '100%',
-          width: `${dim.value}%`,
-          background: barColor,
-          borderRadius: 3,
-          transition: 'width 0.5s ease',
-        }} />
+      <div className="h-1.5 rounded overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div className="h-full rounded transition-all duration-500" style={{ width: `${dim.value}%`, background: barColor }} />
       </div>
-      <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', marginTop: 2 }}>{dim.tip}</div>
+      <div className="text-[0.66rem] text-text-muted mt-0.5">{dim.tip}</div>
     </div>
   );
 }
 
-// ── CPM Display ───────────────────────────────────────────────
 function CpmCard({ result }: { result: MonetizationResult }) {
   const { estimatedCpm } = result;
   return (
-    <div style={{
-      background: 'var(--glass)', border: '1px solid var(--glass-border)',
-      borderRadius: 10, padding: '12px 16px',
-      display: 'flex', flexDirection: 'column', gap: 6,
-    }}>
-      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        Estimated CPM (USD)
+    <div className="rounded-[10px] px-4 py-3 flex flex-col gap-1.5"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="text-[0.72rem] text-text-muted uppercase tracking-wide">Estimated CPM (USD)</div>
+      <div className="flex gap-2 items-baseline">
+        <span className="text-[1.4rem] font-bold" style={{ color: result.tierColor }}>${estimatedCpm.low.toFixed(1)}</span>
+        <span className="text-text-muted">—</span>
+        <span className="text-[1.4rem] font-bold" style={{ color: result.tierColor }}>${estimatedCpm.high.toFixed(1)}</span>
       </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-        <span style={{ fontSize: '1.4rem', fontWeight: 700, color: result.tierColor }}>
-          ${estimatedCpm.low.toFixed(1)}
-        </span>
-        <span style={{ color: 'var(--text-muted)' }}>—</span>
-        <span style={{ fontSize: '1.4rem', fontWeight: 700, color: result.tierColor }}>
-          ${estimatedCpm.high.toFixed(1)}
-        </span>
-      </div>
-      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-        Ước tính dựa trên thị trường + niche. CPM thực tế có thể khác.
-      </div>
+      <div className="text-[0.72rem] text-text-muted">Ước tính dựa trên thị trường + niche. CPM thực tế có thể khác.</div>
     </div>
   );
 }
 
-// ── Revenue Estimator ─────────────────────────────────────────
 function RevenueEstimator({ result }: { result: MonetizationResult }) {
   const scenarios = [
-    { label: '1,000 views/tháng',   views: 1_000 },
-    { label: '10,000 views/tháng',  views: 10_000 },
+    { label: '1,000 views/tháng',   views: 1_000   },
+    { label: '10,000 views/tháng',  views: 10_000  },
     { label: '100,000 views/tháng', views: 100_000 },
   ];
-  const { estimatedCpm } = result;
-
-  function calcRevenue(views: number, cpm: number) {
-    // Revenue = (views / 1000) * CPM * 0.55 (YouTube takes 45%)
-    return ((views / 1000) * cpm * 0.55).toFixed(1);
-  }
-
+  const calc = (v: number, cpm: number) => ((v / 1000) * cpm * 0.55).toFixed(1);
   return (
     <div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>
-        💰 Ước tính doanh thu (sau khi YouTube khấu trừ 45%)
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="text-[0.78rem] text-text-secondary font-semibold mb-2">💰 Ước tính doanh thu (sau khi YouTube khấu trừ 45%)</div>
+      <div className="flex flex-col gap-1.5">
         {scenarios.map(s => (
-          <div
-            key={s.label}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}
-          >
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{s.label}</span>
-            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: result.tierColor }}>
-              ${calcRevenue(s.views, estimatedCpm.low)} – ${calcRevenue(s.views, estimatedCpm.high)}
+          <div key={s.label} className="flex justify-between items-center px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <span className="text-[0.78rem] text-text-muted">{s.label}</span>
+            <span className="text-[0.82rem] font-semibold" style={{ color: result.tierColor }}>
+              ${calc(s.views, result.estimatedCpm.low)} – ${calc(s.views, result.estimatedCpm.high)}
             </span>
           </div>
         ))}
@@ -149,71 +90,45 @@ function RevenueEstimator({ result }: { result: MonetizationResult }) {
   );
 }
 
-// ── Main Tab ──────────────────────────────────────────────────
 export default function MonetizationTab({ keyword, lang = 'ja' }: MonetizationTabProps) {
-  const result = useMemo(
-    () => calculateMonetizationScore(keyword, lang),
-    [keyword.keyword, lang],
-  );
-
+  const result = useMemo(() => calculateMonetizationScore(keyword, lang), [keyword.keyword, lang]);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 14 }}>
-
-      {/* Header row: score + tier + readiness badge */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 20,
-        padding: '14px 16px', background: 'var(--glass)',
-        borderRadius: 12, border: '1px solid var(--glass-border)',
-      }}>
+    <div className="flex flex-col gap-4 mt-3.5">
+      <div className="flex items-center gap-5 px-4 py-3.5 rounded-xl"
+        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <ScoreCircle score={result.totalScore} color={result.tierColor} />
         <TierBadge tier={result.tier} color={result.tierColor} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 4 }}>
-            {result.readyForMonetization
-              ? '✅ Sẵn sàng monetize'
-              : '⚠️ Cần cải thiện trước khi monetize'}
+        <div className="flex-1">
+          <div className="font-bold text-[0.95rem] mb-1">
+            {result.readyForMonetization ? '✅ Sẵn sàng monetize' : '⚠️ Cần cải thiện trước khi monetize'}
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          <div className="text-[0.78rem] text-text-muted leading-relaxed">
             Điểm monetization: <strong style={{ color: result.tierColor }}>{result.totalScore}/100</strong>
             {' '}· Niche: <strong>{keyword.niche || 'Unknown'}</strong>
           </div>
         </div>
       </div>
-
-      {/* Dimension bars */}
       <div className="detail-sub">
         <h3>📊 Chi tiết Monetization Score</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-          {result.dimensions.map(dim => (
-            <DimensionBar key={dim.key} dim={dim} />
-          ))}
+        <div className="flex flex-col gap-3 mt-2">
+          {result.dimensions.map(dim => <DimensionBar key={dim.key} dim={dim} />)}
         </div>
       </div>
-
-      {/* CPM + Revenue estimator */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 12 }}>
+      <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1.5fr' }}>
         <CpmCard result={result} />
         <RevenueEstimator result={result} />
       </div>
-
-      {/* Recommendations */}
       <div className="detail-sub">
         <h3>💡 Khuyến nghị</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+        <div className="flex flex-col gap-2 mt-2">
           {result.recommendations.map((rec, i) => (
-            <div
-              key={i}
-              style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, border: '1px solid var(--glass-border)' }}
-            >
-              {rec}
-            </div>
+            <div key={i} className="px-3 py-2 rounded-lg text-[0.82rem] text-text-secondary leading-relaxed"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>{rec}</div>
           ))}
         </div>
       </div>
-
-      {/* Disclaimer */}
-      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
-        * Ước tính CPM dựa trên dữ liệu thị trường công khai 2024–2025. Doanh thu thực tế phụ thuộc vào nhiều yếu tố: lượt xem, vị trí địa lý viewer, loại quảng cáo.
+      <div className="text-[0.68rem] text-text-muted text-center leading-relaxed">
+        * Ước tính CPM dựa trên dữ liệu thị trường công khai 2024–2025.
       </div>
     </div>
   );

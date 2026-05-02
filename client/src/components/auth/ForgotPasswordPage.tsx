@@ -29,12 +29,12 @@ export default function ForgotPasswordPage({ onGoLogin }: ForgotPasswordPageProp
 
   if (done) return (
     <div className="auth-page">
-      <div className="auth-card" style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem', marginBottom: 12 }}>🔑</div>
-        <h2 style={{ color: 'var(--green)', marginBottom: 8 }}>Đã gửi link đặt lại!</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.7 }}>
-          Kiểm tra email <strong style={{ color: 'var(--accent)' }}>{email}</strong> và bấm vào link để đặt lại mật khẩu.
-          <br /><span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Link có hiệu lực trong 24 giờ.</span>
+      <div className="auth-card text-center">
+        <div className="text-5xl mb-3">🔑</div>
+        <h2 className="text-green-400 mb-2">Đã gửi link đặt lại!</h2>
+        <p className="text-text-secondary mb-6 leading-relaxed">
+          Kiểm tra email <strong className="text-accent">{email}</strong> và bấm vào link để đặt lại mật khẩu.
+          <br /><span className="text-[0.82rem] text-text-muted">Link có hiệu lực trong 24 giờ.</span>
         </p>
         <button className="btn btn-primary auth-btn" onClick={onGoLogin}>Quay lại đăng nhập</button>
       </div>

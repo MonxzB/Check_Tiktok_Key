@@ -61,6 +61,39 @@
   }
   .tw-input::placeholder { color: #5c6480; }
 
+  /* Short-hand styled field — use on <input>, <select>, <textarea> in dark forms */
+  .field-input {
+    @apply w-full box-border rounded-lg text-sm font-sans transition-all duration-200;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e8eaf6;
+    padding: 9px 12px;
+  }
+  .field-input:focus {
+    @apply outline-none;
+    border-color: #00e5ff;
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.12);
+  }
+  .field-input::placeholder { color: #4a5270; }
+
+  .field-select {
+    @apply w-full box-border rounded-lg text-sm font-sans transition-all duration-200 cursor-pointer;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e8eaf6;
+    padding: 9px 12px;
+    appearance: auto;
+  }
+  .field-select:focus {
+    @apply outline-none;
+    border-color: #00e5ff;
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.12);
+  }
+  .field-select option {
+    background: #0d1425;
+    color: #e8eaf6;
+  }
+
   .tw-label {
     @apply block text-xs font-semibold mb-1 uppercase tracking-wide;
     color: #9fa8c7;
