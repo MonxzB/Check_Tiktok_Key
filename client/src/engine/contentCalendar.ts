@@ -4,6 +4,8 @@
 // ============================================================
 import type { Keyword } from '../types';
 import type { ContentLanguage } from './languages/index';
+import { wsKey } from './storageKeys.ts';
+
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -205,48 +207,67 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' });
 }
 
-// ── Persistence helpers (localStorage) ───────────────────────
-const CALENDAR_STATUS_KEY = 'ytlf_calendar_status';
-const CALENDAR_NOTES_KEY  = 'ytlf_calendar_notes';
-const CALENDAR_TITLES_KEY = 'ytlf_calendar_titles';
-const CALENDAR_DATES_KEY  = 'ytlf_calendar_dates';
+// ── Persistence helpers (localStorage) — workspace-scoped ───
+function calKey(suffix: string, workspaceId: string | null | undefined): string {
+  return wsKey(`calendar_${suffix}`, workspaceId);
+}
 
 type StatusMap = Record<string, CalendarEntry['status']>;
 type StringMap = Record<string, string>;
 
-export function saveEntryStatus(id: string, status: CalendarEntry['status']): void {
+export function saveEntryStatus(
+  id: string,
+  status: CalendarEntry['status'],
+  workspaceId?: string | null,
+): void {
   try {
-    const map: StatusMap = JSON.parse(localStorage.getItem(CALENDAR_STATUS_KEY) ?? '{}');
+    const key = calKey('status', workspaceId);
+    const map: StatusMap = JSON.parse(localStorage.getItem(key) ?? '{}');
     map[id] = status;
-    localStorage.setItem(CALENDAR_STATUS_KEY, JSON.stringify(map));
+    localStorage.setItem(key, JSON.stringify(map));
   } catch {}
 }
 
-export function saveEntryNote(id: string, note: string): void {
+export function saveEntryNote(
+  id: string,
+  note: string,
+  workspaceId?: string | null,
+): void {
   try {
-    const map: StringMap = JSON.parse(localStorage.getItem(CALENDAR_NOTES_KEY) ?? '{}');
+    const key = calKey('notes', workspaceId);
+    const map: StringMap = JSON.parse(localStorage.getItem(key) ?? '{}');
     map[id] = note;
-    localStorage.setItem(CALENDAR_NOTES_KEY, JSON.stringify(map));
+    localStorage.setItem(key, JSON.stringify(map));
   } catch {}
 }
 
-export function saveEntryTitle(id: string, title: string): void {
+export function saveEntryTitle(
+  id: string,
+  title: string,
+  workspaceId?: string | null,
+): void {
   try {
-    const map: StringMap = JSON.parse(localStorage.getItem(CALENDAR_TITLES_KEY) ?? '{}');
+    const key = calKey('titles', workspaceId);
+    const map: StringMap = JSON.parse(localStorage.getItem(key) ?? '{}');
     map[id] = title;
-    localStorage.setItem(CALENDAR_TITLES_KEY, JSON.stringify(map));
+    localStorage.setItem(key, JSON.stringify(map));
   } catch {}
 }
 
-export function saveEntryDate(id: string, date: string): void {
+export function saveEntryDate(
+  id: string,
+  date: string,
+  workspaceId?: string | null,
+): void {
   try {
-    const map: StringMap = JSON.parse(localStorage.getItem(CALENDAR_DATES_KEY) ?? '{}');
+    const key = calKey('dates', workspaceId);
+    const map: StringMap = JSON.parse(localStorage.getItem(key) ?? '{}');
     map[id] = date;
-    localStorage.setItem(CALENDAR_DATES_KEY, JSON.stringify(map));
+    localStorage.setItem(key, JSON.stringify(map));
   } catch {}
 }
 
-export function loadCalendarOverrides(): {
+export function loadCalendarOverrides(workspaceId?: string | null): {
   statuses: StatusMap;
   notes: StringMap;
   titles: StringMap;
@@ -254,10 +275,10 @@ export function loadCalendarOverrides(): {
 } {
   try {
     return {
-      statuses: JSON.parse(localStorage.getItem(CALENDAR_STATUS_KEY) ?? '{}'),
-      notes:    JSON.parse(localStorage.getItem(CALENDAR_NOTES_KEY)  ?? '{}'),
-      titles:   JSON.parse(localStorage.getItem(CALENDAR_TITLES_KEY) ?? '{}'),
-      dates:    JSON.parse(localStorage.getItem(CALENDAR_DATES_KEY)  ?? '{}'),
+      statuses: JSON.parse(localStorage.getItem(calKey('status', workspaceId)) ?? '{}'),
+      notes:    JSON.parse(localStorage.getItem(calKey('notes',  workspaceId)) ?? '{}'),
+      titles:   JSON.parse(localStorage.getItem(calKey('titles', workspaceId)) ?? '{}'),
+      dates:    JSON.parse(localStorage.getItem(calKey('dates',  workspaceId)) ?? '{}'),
     };
   } catch {
     return { statuses: {}, notes: {}, titles: {}, dates: {} };
@@ -265,8 +286,11 @@ export function loadCalendarOverrides(): {
 }
 
 /** Apply saved overrides to freshly generated calendar entries */
-export function applyOverrides(cal: ContentCalendar): ContentCalendar {
-  const { statuses, notes, titles, dates } = loadCalendarOverrides();
+export function applyOverrides(
+  cal: ContentCalendar,
+  workspaceId?: string | null,
+): ContentCalendar {
+  const { statuses, notes, titles, dates } = loadCalendarOverrides(workspaceId);
   return {
     ...cal,
     weeks: cal.weeks.map(w => ({

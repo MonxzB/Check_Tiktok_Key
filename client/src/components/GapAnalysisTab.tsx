@@ -4,11 +4,13 @@ import type { UseYoutubeConnectionReturn } from '../hooks/useYoutubeConnection.t
 import { analyzeGap, getOpportunities, type GapResult } from '../engine/gapAnalysis.ts';
 import { formatNum } from './utils.ts';
 import { NICHE_EMOJI } from '../engine/heatmapData.ts';
+import { wsKey } from '../engine/storageKeys.ts';
 
 interface GapAnalysisTabProps {
   keywords: Keyword[];
   ytConn: UseYoutubeConnectionReturn;
   onAnalyzeKeyword: (kw: string) => void;
+  workspaceId?: string | null;
 }
 
 const NICHES = ['', 'AI / ChatGPT', 'Excel / Office', 'Lập trình', 'Tiết kiệm', 'Công việc', 'Phỏng vấn', 'Học tập', 'Tâm lý học', 'Kiến thức / Fact', 'Văn hóa Nhật', '100均', 'Sức khỏe', 'Kinh doanh'];
@@ -19,14 +21,17 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string; e
   covered:     { bg: 'rgba(74,222,128,0.05)', color: '#4ade80', label: 'Đã làm', emoji: '✅' },
 };
 
-export default function GapAnalysisTab({ keywords, ytConn, onAnalyzeKeyword }: GapAnalysisTabProps) {
+export default function GapAnalysisTab({ keywords, ytConn, onAnalyzeKeyword, workspaceId }: GapAnalysisTabProps) {
   const { connection, myVideos, loading, connecting, fetchingVideos, oauthConfigured, connect, disconnect, fetchMyVideos } = ytConn;
   const [minScore, setMinScore] = useState(60);
   const [niche, setNiche] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [localVideos, setLocalVideos] = useState<Array<{ videoId: string; title: string }>>([]);
+
+  // Use workspace-scoped key so planned keywords don't bleed across workspaces
+  const plannedKey = wsKey('planned', workspaceId);
   const [planned, setPlanned] = useState<Set<string>>(() => {
-    try { return new Set(JSON.parse(localStorage.getItem('ytlf_planned') || '[]')); }
+    try { return new Set(JSON.parse(localStorage.getItem(plannedKey) || '[]')); }
     catch { return new Set(); }
   });
 
@@ -51,7 +56,7 @@ export default function GapAnalysisTab({ keywords, ytConn, onAnalyzeKeyword }: G
     setPlanned(prev => {
       const next = new Set(prev);
       next.has(kw) ? next.delete(kw) : next.add(kw);
-      try { localStorage.setItem('ytlf_planned', JSON.stringify([...next])); } catch {}
+      try { localStorage.setItem(plannedKey, JSON.stringify([...next])); } catch {}
       return next;
     });
   }

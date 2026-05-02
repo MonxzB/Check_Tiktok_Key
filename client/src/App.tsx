@@ -35,6 +35,7 @@ import type { TabId } from './types';
 import { KeywordTableSkeleton, StatsBarSkeleton } from './components/Skeleton.tsx';
 import { NoKeywordsEmptyState } from './components/EmptyState.tsx';
 import { usePersistentState } from './hooks/usePersistentState.ts';
+import { wsKey } from './engine/storageKeys.ts';
 // Phase 13: Content Calendar — lazy to isolate any potential crashes
 import CalendarErrorBoundary from './components/CalendarErrorBoundary.tsx';
 const ContentCalendarTab = lazy(() => import('./components/ContentCalendarTab.tsx'));
@@ -46,30 +47,38 @@ const DEFAULT_FILTERS: KeywordFilters = {
 const VALID_TABS: TabId[] = ['keywords', 'youtube', 'csv', 'settings', 'competitors', 'gap', 'calendar'];
 
 export default function App() {
-  const [activeTab, setActiveTabRaw] = usePersistentState<TabId>('ytlf_active_tab', 'keywords');
-  // Guard against stale/invalid tab values in localStorage
+  // ── Auth + workspace MUST come first — other hooks depend on these IDs ──
+  const { user }          = useAuth();
+  const { toasts, toast } = useToast();
+  const { settings, updateSettings, resetSettings } = useSettings();
+  const workspaceProps    = useWorkspaces(user ?? null);
+  const activeWorkspaceId = workspaceProps.activeWorkspace?.id ?? null;
+
+  // ── UI state — scoped to workspace so tabs/filters don't bleed across workspaces ──
+  const [activeTab, setActiveTabRaw] = usePersistentState<TabId>(
+    wsKey('active_tab', activeWorkspaceId), 'keywords',
+  );
   const activeTab_ = VALID_TABS.includes(activeTab) ? activeTab : 'keywords';
   const setActiveTab = useCallback((tab: TabId) => setActiveTabRaw(tab), [setActiveTabRaw]);
 
   const [selectedKw, setSelectedKw] = useState<Keyword | null>(null);
-  const [showFilter, setShowFilter] = usePersistentState<boolean>('ytlf_show_filter', false);
-  const [filters, setFilters]       = usePersistentState<KeywordFilters>('ytlf_filters', DEFAULT_FILTERS);
+  const [showFilter, setShowFilter] = usePersistentState<boolean>(
+    wsKey('show_filter', activeWorkspaceId), false,
+  );
+  const [filters, setFilters] = usePersistentState<KeywordFilters>(
+    wsKey('filters', activeWorkspaceId), DEFAULT_FILTERS,
+  );
 
-  const { user }                                              = useAuth();
-  const { toasts, toast }                                     = useToast();
-  const { settings, updateSettings, resetSettings }           = useSettings();
-  const workspaceProps                                        = useWorkspaces(user ?? null);
-  const activeWorkspaceId = workspaceProps.activeWorkspace?.id ?? null;
-
+  // ── Domain hooks ────────────────────────────────────────────
   const {
     keywords, loading: kwLoading, syncStatus, hasMigrationPending, runMigration,
     expand, score, clear, exportCsv, importCsv, updateApiData, snapshots,
   } = useKeywords(toast, activeWorkspaceId, workspaceProps.activeWorkspace);
 
-  const bulk           = useBulkAnalyze(updateApiData, settings, toast);
-  const compare        = useCompare();
-  const tracker        = useTrackedChannels(activeWorkspaceId);
-  const ytConn         = useYoutubeConnection(user?.id ?? null);
+  const bulk            = useBulkAnalyze(updateApiData, settings, toast);
+  const compare         = useCompare();
+  const tracker         = useTrackedChannels(activeWorkspaceId);
+  const ytConn          = useYoutubeConnection(user?.id ?? null);
   const personalScoring = usePersonalScoring(user?.id ?? null);
 
   const { refVideos, refChannels, loading: ytLoading, serverConfigured, lastKeyword, analyzeKeyword, exportVideosCsv, exportChannelsCsv, checkStatus } = useYoutube(toast, updateApiData, settings);
@@ -280,6 +289,7 @@ export default function App() {
           keywords={keywords}
           ytConn={ytConn}
           onAnalyzeKeyword={handleAnalyzeKeyword}
+          workspaceId={activeWorkspaceId}
         />
       </div>
 
@@ -291,7 +301,7 @@ export default function App() {
               <span className="spinner" style={{ width: 20, height: 20 }} />
             </div>
           }>
-            <ContentCalendarTab keywords={displayKeywords} />
+            <ContentCalendarTab keywords={displayKeywords} workspaceId={activeWorkspaceId} />
           </Suspense>
         </CalendarErrorBoundary>
       </div>

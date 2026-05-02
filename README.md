@@ -427,12 +427,14 @@ tiktok-keyword-tool-v2/
 | 8 | Niche Heatmap (Treemap) | ✅ Done |
 | 9 | ML Feedback Loop (Personal Scoring) | ✅ Done |
 | 10 | Trend Chart in DetailModal | ✅ Done |
+| 10.5 | Gap Analysis Tab (YouTube channel connect) | ✅ Done |
 | 11 | Multi-language Support (JP/KR/EN/VI) | ✅ Done |
 | 12 | SEO Score Tab | ✅ Done |
 | 13 | Content Calendar | ✅ Done |
 | 14 | Monetization Score | ✅ Done |
 | 15 | Thumbnail A/B Ideas | ✅ Done |
 | 16 | UX Polish (Skeleton/Empty/Keyboard) | ✅ Done |
+| 16.5 | localStorage Workspace Scoping | ✅ Done |
 | 17 | Performance Monitoring Dashboard | 🔲 Planned |
 
 ---

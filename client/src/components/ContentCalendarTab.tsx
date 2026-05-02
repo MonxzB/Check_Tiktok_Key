@@ -11,6 +11,7 @@ import type { CalendarEntry, CalendarOptions, PostFrequency, ContentCalendar } f
 
 interface ContentCalendarTabProps {
   keywords: Keyword[];
+  workspaceId?: string | null;
 }
 
 const STATUS_COLORS: Record<CalendarEntry['status'], string> = {
@@ -50,9 +51,10 @@ function formatDate(d: Date | string | undefined): string {
 }
 
 // ── Entry Card ────────────────────────────────────────────────
-function EntryCard({ entry, onUpdate }: {
+function EntryCard({ entry, onUpdate, workspaceId }: {
   entry: CalendarEntry;
   onUpdate: (id: string, patch: Partial<CalendarEntry>) => void;
+  workspaceId?: string | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle]     = useState(entry.customTitle ?? entry.title);
@@ -65,13 +67,13 @@ function EntryCard({ entry, onUpdate }: {
   function handleStatusCycle() {
     const cycle: CalendarEntry['status'][] = ['planned', 'in-progress', 'published', 'skipped'];
     const next = cycle[(cycle.indexOf(entry.status) + 1) % cycle.length];
-    saveEntryStatus(entry.id, next);
+    saveEntryStatus(entry.id, next, workspaceId);
     onUpdate(entry.id, { status: next });
   }
 
   function handleSaveEdit() {
-    saveEntryTitle(entry.id, title);
-    saveEntryNote(entry.id, notes);
+    saveEntryTitle(entry.id, title, workspaceId);
+    saveEntryNote(entry.id, notes, workspaceId);
     onUpdate(entry.id, { customTitle: title, userNotes: notes });
     setEditing(false);
   }
@@ -164,9 +166,10 @@ function EntryCard({ entry, onUpdate }: {
 }
 
 // ── Week Column ───────────────────────────────────────────────
-function WeekColumn({ week, onUpdate }: {
+function WeekColumn({ week, onUpdate, workspaceId }: {
   week: ContentCalendar['weeks'][0];
   onUpdate: (id: string, patch: Partial<CalendarEntry>) => void;
+  workspaceId?: string | null;
 }) {
   const published = week.entries.filter(e => e.status === 'published').length;
   const total = week.entries.length;
@@ -193,7 +196,7 @@ function WeekColumn({ week, onUpdate }: {
       </div>
       {/* Entries */}
       {week.entries.map(e => (
-        <EntryCard key={e.id} entry={e} onUpdate={onUpdate} />
+        <EntryCard key={e.id} entry={e} onUpdate={onUpdate} workspaceId={workspaceId} />
       ))}
     </div>
   );
@@ -299,7 +302,7 @@ function CalendarStats({ cal }: { cal: ContentCalendar }) {
 }
 
 // ── Main Component ────────────────────────────────────────────
-export default function ContentCalendarTab({ keywords }: ContentCalendarTabProps) {
+export default function ContentCalendarTab({ keywords, workspaceId }: ContentCalendarTabProps) {
   const [options, setOptions] = useState<CalendarOptions>({
     frequency: 2,
     lang: 'ja',
@@ -322,7 +325,7 @@ export default function ContentCalendarTab({ keywords }: ContentCalendarTabProps
 
   const calendar = useMemo(() => {
     if (!rawCalendar) return null;
-    const withSaved = applyOverrides(rawCalendar);
+    const withSaved = applyOverrides(rawCalendar, workspaceId);
     // Apply in-memory overrides on top
     return {
       ...withSaved,
@@ -396,7 +399,7 @@ export default function ContentCalendarTab({ keywords }: ContentCalendarTabProps
         <div style={{ overflowX: 'auto', paddingBottom: 12 }}>
           <div style={{ display: 'flex', gap: 12, minWidth: 'max-content' }}>
             {calendar.weeks.map(week => (
-              <WeekColumn key={week.weekNumber} week={week} onUpdate={handleUpdate} />
+              <WeekColumn key={week.weekNumber} week={week} onUpdate={handleUpdate} workspaceId={workspaceId} />
             ))}
           </div>
         </div>
