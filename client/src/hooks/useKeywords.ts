@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase.js';
 import { expandKeywordsWithPack, parseSeeds, getSeedObjects } from '../engine/expansion.js';
 import { scoreLongFormKeywords } from '../engine/longFormScoring.js';
 import { getLanguagePack } from '../engine/languages/index.js';
-import { exportKeywordsCSV, importKeywordsCSV, downloadBlob } from '../engine/csvUtils.js';
+import { exportKeywordsCSV, importKeywordsCSV, downloadBlob } from '../engine/csvUtils.ts';
 import { buildMetadata } from '../engine/dataMetadata.js';
 import type { Keyword, KeywordApiSummary, KeywordMetadata, ToastFn, KeywordRow, ContentLanguage } from '../types';
 import { rowToKeyword, keywordToRow } from '../types';

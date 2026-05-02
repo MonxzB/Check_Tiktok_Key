@@ -5,6 +5,7 @@ import { getLanguagePack, LANGUAGE_OPTIONS } from '../engine/languages/index.js'
 interface SeedInputProps {
   onExpand: (text: string) => void;
   activeWorkspace?: Workspace | null;
+  apiKeys?: string[];
 }
 
 export default function SeedInput({ onExpand, activeWorkspace }: SeedInputProps) {
@@ -35,10 +36,10 @@ export default function SeedInput({ onExpand, activeWorkspace }: SeedInputProps)
   }
 
   const placeholders: Record<string, string> = {
-    ja: 'Nhập keyword tiếng Nhật, mỗi dòng 1 từ\nVí dụ:\nChatGPT 使い方\nExcel 自動化\n節約術',
+    ja: 'Nhập keyword tiếng Nhật, mỗi dòng 1 từ\nVí dụ:\n釣り 初心者\nキャンプ 道具\nダイエット 方法',
     ko: 'Nhập keyword tiếng Hàn, mỗi dòng 1 từ\nVí dụ:\nChatGPT 사용법\n엑셀 자동화\n절약 방법',
-    en: 'Enter English keywords, one per line\nExample:\nChatGPT tutorial\nExcel automation\nhow to save money',
-    vi: 'Nhập keyword tiếng Việt, mỗi dòng 1 từ\nVí dụ:\nChatGPT hướng dẫn\nExcel tự động hóa\ncách tiết kiệm tiền',
+    en: 'Enter English keywords, one per line\nExample:\nfishing for beginners\ncamping gear guide\nhow to lose weight',
+    vi: 'Nhập keyword tiếng Việt, mỗi dòng 1 từ\nVí dụ:\ncâu cá cho người mới\ncách nấu ăn tiết kiệm\ndi cắm trại',
   };
 
   return (

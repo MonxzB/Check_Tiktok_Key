@@ -25,26 +25,35 @@ export const ja: LanguagePack = {
   languageCode: 'ja',
 
   defaultSeeds: [
-    { text: 'AIツール',           vi: 'Công cụ AI',              niche: 'AI / ChatGPT' },
-    { text: 'ChatGPT 使い方',     vi: 'Cách dùng ChatGPT',       niche: 'AI / ChatGPT' },
-    { text: 'ChatGPT 仕事効率化', vi: 'ChatGPT tăng hiệu suất',  niche: 'AI / ChatGPT' },
-    { text: 'Excel 使い方',       vi: 'Cách dùng Excel',         niche: 'Excel / Office' },
-    { text: 'Excel 自動化',       vi: 'Tự động hóa Excel',       niche: 'Excel / Office' },
-    { text: '仕事効率化',         vi: 'Tăng hiệu quả công việc', niche: 'Công việc' },
-    { text: '副業 初心者',        vi: 'Nghề tay trái người mới', niche: 'Công việc' },
-    { text: '転職 やり方',        vi: 'Cách chuyển việc',        niche: 'Công việc' },
-    { text: '面接 完全ガイド',    vi: 'Hướng dẫn phỏng vấn',    niche: 'Phỏng vấn' },
-    { text: '節約術',             vi: 'Mẹo tiết kiệm',           niche: 'Tiết kiệm' },
-    { text: '一人暮らし 節約',    vi: 'Sống một mình tiết kiệm', niche: 'Tiết kiệm' },
-    { text: '家計管理 やり方',    vi: 'Cách quản lý chi tiêu',   niche: 'Tiết kiệm' },
-    { text: '勉強法',             vi: 'Phương pháp học',         niche: 'Học tập' },
-    { text: '英語 学習法',        vi: 'Cách học tiếng Anh',      niche: 'Học tập' },
-    { text: 'TOEIC 勉強法',       vi: 'Cách học TOEIC',         niche: 'Học tập' },
-    { text: '心理学 解説',        vi: 'Giải thích tâm lý học',   niche: 'Tâm lý học' },
-    { text: '雑学',               vi: 'Kiến thức tổng hợp',      niche: 'Kiến thức / Fact' },
-    { text: '日本 マナー',        vi: 'Phép lịch sự Nhật Bản',   niche: 'Văn hóa Nhật' },
-    { text: '100均 活用法',       vi: 'Cách dùng đồ 100 yên',   niche: '100均' },
-    { text: 'Python 入門',        vi: 'Nhập môn Python',        niche: 'Lập trình' },
+    // 🎣 Fishing
+    { text: '釣り 初心者',         vi: 'Câu cá cho người mới',      niche: 'Câu cá' },
+    { text: '渓流釣り やり方',     vi: 'Cách câu cá suối',          niche: 'Câu cá' },
+    { text: 'ルアー 選び方',       vi: 'Cách chọn mồi giả',         niche: 'Câu cá' },
+    // 🍳 Cooking
+    { text: '簡単 料理 レシピ',    vi: 'Công thức nấu ăn đơn giản', niche: 'Nấu ăn' },
+    { text: '一人暮らし 自炊',     vi: 'Nấu ăn một mình',           niche: 'Nấu ăn' },
+    { text: '節約 レシピ',         vi: 'Công thức tiết kiệm',        niche: 'Nấu ăn' },
+    // 🏕️ Outdoor / Camping
+    { text: 'キャンプ 初心者',     vi: 'Cắm trại cho người mới',    niche: 'Outdoor' },
+    { text: 'ソロキャンプ 道具',   vi: 'Đồ cắm trại một mình',      niche: 'Outdoor' },
+    { text: '登山 準備',           vi: 'Chuẩn bị leo núi',          niche: 'Outdoor' },
+    // 🛠️ DIY / Home
+    { text: 'DIY 初心者',          vi: 'DIY cho người mới',         niche: 'DIY' },
+    { text: '部屋 収納 アイデア',  vi: 'Ý tưởng sắp xếp phòng',    niche: 'DIY' },
+    { text: '100均 DIY',           vi: 'DIY từ đồ 100 yên',         niche: '100均' },
+    // ✈️ Travel
+    { text: '国内旅行 おすすめ',   vi: 'Du lịch trong nước Nhật',   niche: 'Du lịch' },
+    { text: '格安旅行 やり方',     vi: 'Du lịch tiết kiệm',         niche: 'Du lịch' },
+    { text: '一人旅 初心者',       vi: 'Du lịch một mình',          niche: 'Du lịch' },
+    // 🐕 Pets
+    { text: '犬 しつけ 方法',      vi: 'Cách dạy chó',              niche: 'Thú cưng' },
+    { text: '猫 飼い方 初心者',    vi: 'Nuôi mèo cho người mới',   niche: 'Thú cưng' },
+    // 🌱 Gardening
+    { text: 'ベランダ 家庭菜園',   vi: 'Trồng rau trên ban công',   niche: 'Làm vườn' },
+    { text: '観葉植物 育て方',     vi: 'Cách trồng cây cảnh',       niche: 'Làm vườn' },
+    // 💪 Health / Fitness
+    { text: '自宅トレーニング',    vi: 'Tập thể dục tại nhà',       niche: 'Sức khỏe' },
+    { text: 'ダイエット 方法',     vi: 'Phương pháp giảm cân',      niche: 'Sức khỏe' },
   ],
 
   longFormSuffixes: [

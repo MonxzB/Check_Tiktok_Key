@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import type { Keyword, KeywordFilters } from './types';
 import type { TiktokChannel } from './types';
 import Header from './components/Header.js';
+import Footer from './components/Footer.tsx';
 import Tabs from './components/Tabs.js';
 import SeedInput from './components/SeedInput.js';
 import ActionBar from './components/ActionBar.js';
@@ -207,7 +208,7 @@ export default function App() {
 
       {/* Keywords Tab */}
       <div style={{ display: is('keywords') }}>
-        <SeedInput onExpand={expand} activeWorkspace={workspaceProps.activeWorkspace} />
+        <SeedInput onExpand={expand} activeWorkspace={workspaceProps.activeWorkspace} apiKeys={settings.apiKeys ?? []} />
 
         {/* 16.5 Proper skeleton */}
         {showSkeleton && (
@@ -369,6 +370,7 @@ export default function App() {
       />
 
       <Toast toasts={toasts} />
+      <Footer />
     </div>
   );
 }

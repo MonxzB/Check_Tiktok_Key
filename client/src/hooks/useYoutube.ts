@@ -2,7 +2,7 @@
 // hooks/useYoutube.ts — YouTube analysis hook
 // ============================================================
 import { useState, useCallback } from 'react';
-import { exportRefVideosCSV, exportRefChannelsCSV, downloadBlob } from '../engine/csvUtils.js';
+import { exportRefVideosCSV, exportRefChannelsCSV, downloadBlob } from '../engine/csvUtils.ts';
 import { buildMetadata } from '../engine/dataMetadata.js';
 import { recordAnalyzeCall } from '../engine/quotaTracker.js';
 import type {
