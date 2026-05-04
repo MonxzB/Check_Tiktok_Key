@@ -156,10 +156,17 @@ export default function SignupPage({ onGoLogin }: SignupPageProps) {
       setStep(2);
       cooldown.start();
     } catch (err) {
-      const msg = (err as Error).message;
-      setError(msg.includes('already registered')
-        ? 'Email này đã được đăng ký. Vui lòng đăng nhập.'
-        : msg);
+      const msg = (err as Error).message ?? '';
+      const status = (err as { status?: number }).status;
+      if (msg.includes('already registered') || msg.includes('User already registered')) {
+        setError('Email này đã được đăng ký. Vui lòng đăng nhập.');
+      } else if (msg.toLowerCase().includes('email rate limit') || msg.toLowerCase().includes('rate limit')) {
+        setError('Đã gửi quá nhiều email xác nhận. Vui lòng đợi vài phút rồi thử lại.');
+      } else if (status === 500 || msg.includes('500') || msg.toLowerCase().includes('server error')) {
+        setError('Máy chủ xác thực đang gặp sự cố (500). Có thể Supabase project bị tạm dừng hoặc email bị giới hạn. Vui lòng thử lại sau vài phút.');
+      } else {
+        setError(msg || 'Đăng ký thất bại. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }

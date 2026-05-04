@@ -89,7 +89,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
+      (event: AuthChangeEvent, session: Session | null) => {
+        // Refresh token không còn hợp lệ → xóa token cũ, logout im lặng
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          clearLoginTime();
+          supabase.auth.signOut().catch(() => {});
+          setUser(null);
+          stopExpiryWatcher();
+          setLoading(false);
+          return;
+        }
+        if (event === 'SIGNED_OUT') {
+          clearLoginTime();
+          setUser(null);
+          stopExpiryWatcher();
+          setLoading(false);
+          return;
+        }
         if (session?.user) {
           setUser(session.user);
           startExpiryWatcher(doSignOut);
