@@ -10,13 +10,13 @@ import type { AuditAction } from '../engine/tiktokChannels';
 type DetailTab = 'overview' | 'targeting' | 'credentials' | 'technical' | 'performance';
 
 const STATUS_OPTS: { value: TiktokChannelStatus; label: string }[] = [
-  { value: 'active',       label: '🟢 Active' },
-  { value: 'warming_up',   label: '🔵 Warming up' },
-  { value: 'warning',      label: '🟡 Warning' },
-  { value: 'shadowbanned', label: '🟠 Shadowbanned' },
-  { value: 'banned',       label: '🔴 Banned' },
-  { value: 'paused',       label: '⚪ Paused' },
-  { value: 'archived',     label: '🗃️ Archived' },
+  { value: 'active',       label: '🟢 Hoạt động' },
+  { value: 'warming_up',   label: '🔵 Khởi động' },
+  { value: 'warning',      label: '🟡 Cảnh báo' },
+  { value: 'shadowbanned', label: '🟠 Shadow ban' },
+  { value: 'banned',       label: '🔴 Bị cấm' },
+  { value: 'paused',       label: '⚪ Tạm dừng' },
+  { value: 'archived',     label: '🗃️ Lưu trữ' },
 ];
 
 function fmt(n: number) {

@@ -220,13 +220,13 @@ function PasteImportModal({ onClose, onSave, vaultKey }: PasteImportModalProps) 
 
 
 const STATUS_BADGE: Record<TiktokChannelStatus, { label: string; color: string; bg: string }> = {
-  active:       { label: '🟢 Active',       color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
-  warming_up:   { label: '🔵 Warming up',   color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-  warning:      { label: '🟡 Warning',      color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-  shadowbanned: { label: '🟠 Shadowbanned', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
-  banned:       { label: '🔴 Banned',       color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  paused:       { label: '⚪ Paused',       color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' },
-  archived:     { label: '🗃️ Archived',     color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+  active:       { label: '🟢 Hoạt động',     color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
+  warming_up:   { label: '🔵 Khởi động',     color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+  warning:      { label: '🟡 Cảnh báo',      color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  shadowbanned: { label: '🟠 Shadow ban',    color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  banned:       { label: '🔴 Bị cấm',        color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  paused:       { label: '⚪ Tạm dừng',      color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' },
+  archived:     { label: '🗃️ Lưu trữ',      color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
 };
 
 function fmt(n: number): string {
@@ -291,6 +291,11 @@ function ChannelRow({ ch, vaultKey, onSelectChannel }: {
   const creds = useRowCreds(ch, vaultKey);
   const badge = STATUS_BADGE[ch.status];
 
+  // Strip [UserPass] prefix for display
+  const tiktokPw = creds?.token?.startsWith('[UserPass]')
+    ? creds.token.slice(10)
+    : (creds?.token ?? undefined);
+
   return (
     <tr
       className="transition-colors duration-100"
@@ -298,21 +303,31 @@ function ChannelRow({ ch, vaultKey, onSelectChannel }: {
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
       onMouseLeave={e => (e.currentTarget.style.background = '')}
     >
+      {/* Trạng thái */}
       <td className="px-2 py-2 whitespace-nowrap">
         <span className="rounded-md px-1.5 py-0.5 text-[0.72rem] font-semibold"
           style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
       </td>
+      {/* Tên kênh */}
       <td className="px-2 py-2 whitespace-nowrap">
         <div className="font-semibold text-[0.82rem]">{ch.channelName}</div>
         <div className="text-[0.72rem] text-text-muted">@{ch.username}</div>
       </td>
-      <td className="px-2 py-2"><CredCell value={ch.uuid ?? ch.channelId ?? undefined} masked={false} /></td>
+      {/* Mật khẩu TikTok */}
+      <td className="px-2 py-2"><CredCell value={tiktokPw} masked={true} /></td>
+      {/* Email */}
       <td className="px-2 py-2"><CredCell value={creds?.email} masked={false} /></td>
+      {/* Mật khẩu email */}
       <td className="px-2 py-2"><CredCell value={creds?.password} masked={true} /></td>
-      <td className="px-2 py-2"><CredCell value={creds?.token ?? creds?.cookie} masked={true} /></td>
+      {/* Token/Cookie */}
+      <td className="px-2 py-2"><CredCell value={creds?.cookie} masked={true} /></td>
+      {/* Email phụ */}
       <td className="px-2 py-2"><CredCell value={creds?.secondaryEmail} masked={false} /></td>
-      <td className="px-2 py-2 font-semibold text-[0.8rem] whitespace-nowrap">{fmt(ch.followersCount)}</td>
-      <td className="px-2 py-2 text-text-muted text-[0.75rem] whitespace-nowrap">{relTime(ch.lastPostAt)}</td>
+      {/* Ghi chú */}
+      <td className="px-2 py-2 text-text-muted text-[0.75rem] max-w-[140px] truncate" title={ch.notes ?? ''}>
+        {ch.notes || '—'}
+      </td>
+      {/* Thao tác */}
       <td className="px-2 py-2">
         <button className="btn text-[0.72rem]" style={{ padding: '2px 8px' }}
           onClick={e => { e.stopPropagation(); onSelectChannel(ch); }}>Xem</button>
@@ -571,17 +586,17 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
   if (vaultState === 'first_time' && userId) return <div className="px-4 py-6"><MasterPasswordSetup userId={userId} onSetup={setup} /></div>;
   if (vaultState === 'locked' && userId) return <div className="px-4 py-6"><MasterPasswordPrompt userId={userId} failedAttempts={failedAttempts} onUnlock={unlock} /></div>;
 
-  const HEADERS = ['Status','Channel','ID/Handle','Email (Hotmail)','Password','Token/Cookie','Secondary Email','Followers','Last post','Actions'];
+  const HEADERS = ['Trạng thái','Tên kênh','Mật khẩu TikTok','Email','Mật khẩu email','Token/Cookie','Email phụ','Ghi chú','Thao tác'];
 
   return (
     <div className="flex flex-col gap-3">
       {/* Stats */}
       <div className="flex gap-3 flex-wrap">
         {[
-          { label: 'Tổng channel',   value: stats.total,               icon: '📱' },
-          { label: 'Active',         value: stats.active,              icon: '🟢' },
-          { label: 'Cần chú ý',     value: stats.warning,             icon: '🟡' },
-          { label: 'Banned',         value: stats.banned,              icon: '🔴' },
+          { label: 'Tổng kênh',      value: stats.total,               icon: '📱' },
+          { label: 'Hoạt động',     value: stats.active,              icon: '🟢' },
+          { label: 'Cần chú ý',    value: stats.warning,             icon: '🟡' },
+          { label: 'Bị cấm',        value: stats.banned,              icon: '🔴' },
           { label: 'Tổng followers', value: fmt(stats.totalFollowers), icon: '👥' },
         ].map(s => (
           <div key={s.label} className="rounded-[10px] px-4 py-2.5 min-w-[120px]"
@@ -599,7 +614,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
           style={{ flex: '1 1 200px', maxWidth: 320, width: 'auto' }} />
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="field-select" style={{ minWidth: 130, width: 'auto' }}>
-          <option value="">Tất cả status</option>
+          <option value="">Tất cả trạng thái</option>
           {Object.entries(STATUS_BADGE).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
         <select value={filterLang} onChange={e => setFilterLang(e.target.value)}
