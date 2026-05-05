@@ -314,6 +314,22 @@ function ChannelRow({ ch, vaultKey, onSelectChannel, onDelete }: {
         <div className="font-semibold text-[0.82rem]">{ch.channelName}</div>
         <div className="text-[0.72rem] text-text-muted">@{ch.username}</div>
       </td>
+      {/* Link kênh */}
+      <td className="px-2 py-2 whitespace-nowrap">
+        {ch.channelUrl
+          ? <a
+              href={ch.channelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors text-[0.75rem] font-mono"
+              title={ch.channelUrl}
+            >
+              🔗 <span className="max-w-[110px] truncate">{ch.channelUrl.replace('https://www.tiktok.com/@','@').replace('https://tiktok.com/@','@')}</span>
+            </a>
+          : <span className="text-text-muted text-[0.72rem]">—</span>
+        }
+      </td>
       {/* Mật khẩu TikTok */}
       <td className="px-2 py-2"><CredCell value={tiktokPw} masked={true} /></td>
       {/* Email */}
@@ -605,7 +621,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
   if (vaultState === 'first_time' && userId) return <div className="px-4 py-6"><MasterPasswordSetup userId={userId} onSetup={setup} /></div>;
   if (vaultState === 'locked' && userId) return <div className="px-4 py-6"><MasterPasswordPrompt userId={userId} failedAttempts={failedAttempts} onUnlock={unlock} /></div>;
 
-  const HEADERS = ['Trạng thái','Tên kênh','Mật khẩu TikTok','Email','Mật khẩu email','Token/Cookie','Email phụ','Ghi chú','Thao tác'];
+  const HEADERS = ['Trạng thái','Tên kênh','Link kênh','Mật khẩu TikTok','Email','Mật khẩu email','Token/Cookie','Email phụ','Ghi chú','Thao tác'];
 
   return (
     <div className="flex flex-col gap-3">
