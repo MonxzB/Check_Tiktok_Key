@@ -214,7 +214,7 @@ export interface ToastItem {
 }
 
 // ── Tab IDs ───────────────────────────────────────────────────
-export type TabId = 'keywords' | 'youtube' | 'settings' | 'competitors' | 'gap' | 'tiktok';
+export type TabId = 'keywords' | 'youtube' | 'settings' | 'competitors' | 'gap' | 'tiktok' | 'reup';
 
 // ── Quota tracker ─────────────────────────────────────────────
 export interface QuotaEntry {

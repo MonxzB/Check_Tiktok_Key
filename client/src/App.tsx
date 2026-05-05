@@ -48,12 +48,15 @@ import TiktokChannelsTab from './components/TiktokChannelsTab.tsx';
 import TiktokChannelDetailModal from './components/TiktokChannelDetailModal.tsx';
 import { useMasterPassword } from './hooks/useMasterPassword.ts';
 import { useTiktokChannels } from './hooks/useTiktokChannels.ts';
+// Phase 19: Reup Strategy Advisor
+import ReupStrategyTab from './components/reupStrategy/ReupStrategyTab.tsx';
+import { useReupStrategy } from './hooks/useReupStrategy.ts';
 
 const DEFAULT_FILTERS: KeywordFilters = {
   minScore: 0, niche: '', level: '', intent: '', evergreen: '', risk: '', rec: '',
 };
 
-const VALID_TABS: TabId[] = ['keywords', 'youtube', 'settings', 'competitors', 'gap', 'tiktok'];
+const VALID_TABS: TabId[] = ['keywords', 'youtube', 'settings', 'competitors', 'gap', 'tiktok', 'reup'];
 
 export default function App() {
   // ── Auth + workspace MUST come first — other hooks depend on these IDs ──
@@ -104,6 +107,9 @@ export default function App() {
   const masterPw       = useMasterPassword();
   const tiktokChannels = useTiktokChannels(user?.id ?? null, activeWorkspaceId);
   const [selectedChannel, setSelectedChannel] = useState<TiktokChannel | null>(null);
+
+  // Phase 19: Reup Strategy Advisor
+  const reupStrategy = useReupStrategy(user?.id ?? null, activeWorkspaceId, toast);
 
   const hasResults = keywords.length > 0;
 
@@ -323,6 +329,15 @@ export default function App() {
           masterPw={masterPw}
           tiktokChannels={tiktokChannels}
           onSelectChannel={setSelectedChannel}
+        />
+      </div>
+
+      {/* Reup Strategy Tab — Phase 19 */}
+      <div style={{ display: is('reup') }}>
+        <ReupStrategyTab
+          hook={reupStrategy}
+          userId={user?.id ?? null}
+          workspaceId={activeWorkspaceId}
         />
       </div>
 

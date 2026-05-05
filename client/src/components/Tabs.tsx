@@ -12,6 +12,7 @@ const ALL_TABS: TabDefinition[] = [
   { id: 'competitors', label: '👥 Competitors'         },
   { id: 'gap',         label: '🎯 Gap Analysis'        },
   { id: 'tiktok',     label: '📱 TikTok Channels'     },
+  { id: 'reup',       label: '✂️ Reup Strategy'       },
   { id: 'settings',   label: '⚙️ Cài đặt'             },
 ];
 
