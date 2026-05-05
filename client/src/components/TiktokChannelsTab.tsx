@@ -283,10 +283,11 @@ function useRowCreds(channel: TiktokChannel, vaultKey: CryptoKey | null) {
 }
 
 // ── Channel row ───────────────────────────────────────────────
-function ChannelRow({ ch, vaultKey, onSelectChannel }: {
+function ChannelRow({ ch, vaultKey, onSelectChannel, onDelete }: {
   ch: TiktokChannel;
   vaultKey: CryptoKey | null;
   onSelectChannel: (ch: TiktokChannel) => void;
+  onDelete: (ch: TiktokChannel) => void;
 }) {
   const creds = useRowCreds(ch, vaultKey);
   const badge = STATUS_BADGE[ch.status];
@@ -329,8 +330,16 @@ function ChannelRow({ ch, vaultKey, onSelectChannel }: {
       </td>
       {/* Thao tác */}
       <td className="px-2 py-2">
-        <button className="btn text-[0.72rem]" style={{ padding: '2px 8px' }}
-          onClick={e => { e.stopPropagation(); onSelectChannel(ch); }}>Xem</button>
+        <div className="flex gap-1.5">
+          <button className="btn text-[0.72rem]" style={{ padding: '2px 8px' }}
+            onClick={e => { e.stopPropagation(); onSelectChannel(ch); }}>Xem</button>
+          <button
+            className="btn text-[0.72rem]"
+            style={{ padding: '2px 8px', borderColor: 'rgba(239,68,68,0.4)', color: '#ef4444' }}
+            onClick={e => { e.stopPropagation(); onDelete(ch); }}
+            title="Xóa channel"
+          >🗑</button>
+        </div>
       </td>
     </tr>
   );
@@ -538,7 +547,17 @@ interface Props {
 }
 
 export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tiktokChannels, onSelectChannel }: Props) {
-  const { channels, loading, error: loadError, addChannel } = tiktokChannels;
+  const { channels, loading, error: loadError, addChannel, removeChannel } = tiktokChannels;
+  const [deleteTarget, setDeleteTarget] = useState<TiktokChannel | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try { await removeChannel(deleteTarget.id); } finally {
+      setDeleting(false); setDeleteTarget(null);
+    }
+  }
   const { state: vaultState, key: vaultKey, failedAttempts, setup, unlock } = masterPw;
   const [search,       setSearch]       = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -653,7 +672,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
             </thead>
             <tbody>
               {filtered.map(ch => (
-                <ChannelRow key={ch.id} ch={ch} vaultKey={vaultKey} onSelectChannel={onSelectChannel} />
+                <ChannelRow key={ch.id} ch={ch} vaultKey={vaultKey} onSelectChannel={onSelectChannel} onDelete={setDeleteTarget} />
               ))}
             </tbody>
           </table>
@@ -662,6 +681,36 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
 
       {showAdd && <AddChannelModal onClose={() => setShowAdd(false)} onSave={handleAddSave} vaultKey={vaultKey} />}
       {showPaste && <PasteImportModal onClose={() => setShowPaste(false)} onSave={handleAddSave} vaultKey={vaultKey} />}
+
+      {/* Confirm Delete Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[1300] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+          onClick={() => !deleting && setDeleteTarget(null)}>
+          <div className="rounded-xl p-6 w-full" style={{ maxWidth: 420, background: '#0d1425', border: '1px solid rgba(239,68,68,0.25)', boxShadow: '0 24px 60px rgba(0,0,0,0.7)' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="text-3xl mb-3 text-center">🗑️</div>
+            <h3 className="text-center font-bold text-[1rem] mb-2">Xác nhận xóa channel</h3>
+            <p className="text-center text-[0.85rem] text-text-muted mb-1">
+              Bạn chắc chắn muốn xóa <strong className="text-white">@{deleteTarget.username}</strong>?
+            </p>
+            <p className="text-center text-[0.75rem] text-red-400 mb-5">
+              Tất cả credentials đã mã hóa sẽ bị xóa vĩnh viễn. Không thể khôi phục.
+            </p>
+            <div className="flex gap-2.5 justify-center">
+              <button className="btn" onClick={() => setDeleteTarget(null)} disabled={deleting}>Huỷ</button>
+              <button
+                className="btn"
+                style={{ background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.5)', color: '#ef4444' }}
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? '⏳ Đang xóa…' : '🗑 Xóa vĩnh viễn'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
