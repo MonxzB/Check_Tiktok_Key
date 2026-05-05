@@ -12,6 +12,213 @@ import MasterPasswordPrompt from './MasterPasswordPrompt';
 import { isCryptoSupported } from '../engine/encryption';
 import { decryptCredentials } from '../engine/tiktokChannels';
 
+// ── Paste-import parser ───────────────────────────────────────
+// Supported format: username|tiktokPassword|email|emailPassword|cookie
+// Parts are detected by heuristics — order can vary.
+interface ParsedLine {
+  raw: string;
+  username: string;
+  channelName: string;
+  email: string;
+  password: string;       // email/hotmail password
+  userPass: string;       // TikTok login password
+  cookie: string;         // full cookie string
+  secondaryEmail: string;
+  valid: boolean;
+  error?: string;
+}
+
+function isCookieStr(s: string): boolean {
+  return (
+    s.length > 80 &&
+    (s.includes('tt_csrf_token') || s.includes('sessionid') ||
+     s.includes('ttwid') || s.includes('sid_tt') ||
+     (s.includes(';') && s.includes('=')))
+  );
+}
+function isEmail(s: string): boolean {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
+}
+function isUsername(s: string): boolean {
+  // TikTok username: no spaces, no @, reasonable length
+  return s.length >= 3 && s.length <= 50 && !s.includes('@') && !s.includes('=') && !s.includes(';');
+}
+
+export function parsePastedLine(line: string): ParsedLine {
+  const result: ParsedLine = {
+    raw: line, username: '', channelName: '', email: '',
+    password: '', userPass: '', cookie: '', secondaryEmail: '', valid: false,
+  };
+  const parts = line.split('|').map(p => p.trim()).filter(Boolean);
+  if (parts.length < 2) { result.error = 'Cần ít nhất 2 trường cách nhau bởi |'; return result; }
+
+  // Separate cookie from short fields first
+  const cookiePart = parts.find(isCookieStr) ?? '';
+  const otherParts = parts.filter(p => p !== cookiePart);
+
+  const emails = otherParts.filter(isEmail);
+  const nonEmailShort = otherParts.filter(p => !isEmail(p) && p.length <= 60);
+
+  // email[0] = primary (hotmail), email[1] = secondary
+  result.email = emails[0] ?? '';
+  result.secondaryEmail = emails[1] ?? '';
+
+  // First non-email short string = username, rest = passwords
+  const [usernameGuess, ...passwords] = nonEmailShort;
+  result.username = (usernameGuess ?? '').replace(/^@/, '');
+  result.channelName = result.username;
+  // If 2 passwords: first = TikTok password, second = email password
+  // If 1 password: treat as TikTok password (more common)
+  if (passwords.length >= 2) {
+    result.userPass  = passwords[0];  // TikTok login pw
+    result.password  = passwords[1];  // Hotmail pw
+  } else if (passwords.length === 1) {
+    result.userPass  = passwords[0];
+  }
+  result.cookie = cookiePart;
+
+  if (!result.username) { result.error = 'Không tìm thấy username'; return result; }
+  result.valid = true;
+  return result;
+}
+
+export function parsePastedText(text: string): ParsedLine[] {
+  return text.split('\n').map(l => l.trim()).filter(Boolean).map(parsePastedLine);
+}
+
+// ── Paste Import Modal ────────────────────────────────────────
+interface PasteImportModalProps {
+  onClose: () => void;
+  onSave: (ch: Omit<TiktokChannel,'id'|'userId'|'createdAt'|'updatedAt'>, creds: PlainCredentials, key: CryptoKey | null) => Promise<void>;
+  vaultKey: CryptoKey | null;
+}
+function PasteImportModal({ onClose, onSave, vaultKey }: PasteImportModalProps) {
+  const [text, setText] = useState('');
+  const [parsed, setParsed] = useState<ParsedLine[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(0);
+  const [err, setErr] = useState('');
+  const [step, setStep] = useState<'paste'|'preview'>('paste');
+
+  function handleParse() {
+    const lines = parsePastedText(text);
+    if (!lines.length) { setErr('Không có dòng nào hợp lệ'); return; }
+    setParsed(lines); setStep('preview'); setErr('');
+  }
+
+  async function handleImport() {
+    setBusy(true); setErr(''); setDone(0);
+    const validRows = parsed.filter(p => p.valid);
+    for (const row of validRows) {
+      try {
+        const ch: Omit<TiktokChannel,'id'|'userId'|'createdAt'|'updatedAt'> = {
+          channelName: row.channelName || row.username,
+          username: row.username,
+          channelUrl: `https://www.tiktok.com/@${row.username}`,
+          uuid: null, channelId: null, niche: null, language: 'ja', status: 'active',
+          followersCount: 0, followingCount: 0, videosCount: 0, totalLikes: 0, avgViews: 0,
+          targetKeywords: [], tags: [], isMonetized: false, isCreatorFund: false,
+          notes: null, priority: 0,
+        };
+        const creds: PlainCredentials = {};
+        if (row.email)         creds.email    = row.email;
+        if (row.password)      creds.password = row.password;
+        if (row.userPass)      creds.token    = `[UserPass]${row.userPass}`;
+        if (row.cookie)        creds.cookie   = row.cookie;
+        if (row.secondaryEmail) creds.secondaryEmail = row.secondaryEmail;
+        await onSave(ch, creds, vaultKey);
+        setDone(d => d + 1);
+      } catch(e) { setErr((e as Error).message); }
+    }
+    setBusy(false);
+    if (!err) onClose();
+  }
+
+  const validCount = parsed.filter(p => p.valid).length;
+
+  return (
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-3"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
+      <div className="w-full rounded-xl p-6" style={{ maxWidth: 780, maxHeight: '90vh', overflow: 'auto', background: '#0d1425', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold m-0">📋 Import hàng loạt từ clipboard</h2>
+          <button className="btn" onClick={onClose}>✕</button>
+        </div>
+
+        {step === 'paste' && (
+          <>
+            <p className="text-[0.8rem] text-text-muted mb-3">
+              Paste dữ liệu theo định dạng <code className="bg-[rgba(255,255,255,0.07)] px-1 rounded">username|tiktokPassword|email|emailPassword|cookie</code>, mỗi tài khoản một dòng.
+              Hệ thống tự nhận dạng các trường theo thứ tự và kiểu dữ liệu.
+            </p>
+            <textarea
+              className="field-input w-full font-mono text-[0.75rem] resize-y"
+              rows={10}
+              placeholder={`user7288051187522|5kK!jfey31AbM|giayeetram1396@outlook.com|ZN89To0GFm|tt_csrf_token=...\nuser9876543210|AnotherPw!|account2@hotmail.com|Pw2|sessionid=...`}
+              value={text}
+              onChange={e => setText(e.target.value)}
+            />
+            {err && <p className="text-red-400 text-[0.8rem] mt-2">❌ {err}</p>}
+            <div className="flex gap-2 justify-end mt-4">
+              <button className="btn" onClick={onClose}>Huỷ</button>
+              <button className="btn btn-primary" onClick={handleParse} disabled={!text.trim()}>📊 Phân tích →</button>
+            </div>
+          </>
+        )}
+
+        {step === 'preview' && (
+          <>
+            <p className="text-[0.82rem] mb-3">
+              Tìm thấy <strong>{parsed.length}</strong> dòng — <strong className="text-green-400">{validCount} hợp lệ</strong>{parsed.length - validCount > 0 && <span className="text-red-400"> / {parsed.length - validCount} lỗi</span>}.
+              {!vaultKey && <span className="text-amber-400 ml-2">⚠️ Vault chưa mở — credentials sẽ không được mã hóa.</span>}
+            </p>
+            <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid rgba(255,255,255,0.07)', maxHeight: 320 }}>
+              <table className="w-full border-collapse text-[0.75rem]">
+                <thead>
+                  <tr style={{ background: 'rgba(15,23,50,0.9)', borderBottom: '2px solid rgba(255,255,255,0.08)' }}>
+                    {['#','Status','Username','Email','TikTok PW','Cookie'].map(h => (
+                      <th key={h} className="px-2 py-2 text-left font-semibold text-text-muted uppercase tracking-wide">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsed.map((row, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="px-2 py-1.5 text-text-muted">{i + 1}</td>
+                      <td className="px-2 py-1.5">
+                        {row.valid
+                          ? <span className="text-green-400">✅</span>
+                          : <span className="text-red-400" title={row.error}>❌</span>}
+                      </td>
+                      <td className="px-2 py-1.5 font-semibold">{row.username || '—'}</td>
+                      <td className="px-2 py-1.5 text-text-muted">{row.email || '—'}</td>
+                      <td className="px-2 py-1.5 font-mono">{row.userPass ? '••••••••' : '—'}</td>
+                      <td className="px-2 py-1.5">
+                        {row.cookie ? <span className="text-cyan-400 text-[0.7rem]">{row.cookie.substring(0, 30)}…</span> : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {err && <p className="text-red-400 text-[0.8rem] mt-2">❌ {err}</p>}
+            {busy && <p className="text-text-muted text-[0.8rem] mt-2">⏳ Đang lưu {done}/{validCount}…</p>}
+            <div className="flex gap-2 justify-end mt-4">
+              <button className="btn" onClick={() => setStep('paste')}>← Sửa lại</button>
+              <button className="btn" onClick={onClose}>Huỷ</button>
+              <button className="btn btn-primary" onClick={handleImport} disabled={busy || validCount === 0}>
+                {busy ? `⏳ ${done}/${validCount}…` : `💾 Import ${validCount} channel`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 const STATUS_BADGE: Record<TiktokChannelStatus, { label: string; color: string; bg: string }> = {
   active:       { label: '🟢 Active',       color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
   warming_up:   { label: '🔵 Warming up',   color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
@@ -322,6 +529,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
   const [filterStatus, setFilterStatus] = useState('');
   const [filterLang,   setFilterLang]   = useState('');
   const [showAdd,      setShowAdd]      = useState(false);
+  const [showPaste,    setShowPaste]    = useState(false);
 
   const filtered = useMemo(() =>
     channels.filter(ch => {
@@ -402,6 +610,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
         </select>
         <div className="ml-auto flex gap-2">
           <button className="btn text-[0.82rem]" onClick={masterPw.lock}>🔒 Khoá vault</button>
+          <button className="btn btn-secondary text-[0.82rem]" onClick={() => setShowPaste(true)}>📋 Import</button>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}>➕ Thêm channel</button>
         </div>
       </div>
@@ -437,6 +646,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
       )}
 
       {showAdd && <AddChannelModal onClose={() => setShowAdd(false)} onSave={handleAddSave} vaultKey={vaultKey} />}
+      {showPaste && <PasteImportModal onClose={() => setShowPaste(false)} onSave={handleAddSave} vaultKey={vaultKey} />}
     </div>
   );
 }
