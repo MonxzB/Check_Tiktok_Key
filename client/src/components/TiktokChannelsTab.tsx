@@ -229,6 +229,30 @@ const STATUS_BADGE: Record<TiktokChannelStatus, { label: string; color: string; 
   archived:     { label: '🗃️ Lưu trữ',      color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
 };
 
+// ── Country options ───────────────────────────────────────────
+const COUNTRY_OPTIONS: { value: string; label: string; flag: string }[] = [
+  { value: 'VN', label: 'Việt Nam',     flag: '🇻🇳' },
+  { value: 'JP', label: 'Nhật Bản',     flag: '🇯🇵' },
+  { value: 'PH', label: 'Philippines',  flag: '🇵🇭' },
+  { value: 'US', label: 'Hoa Kỳ',       flag: '🇺🇸' },
+  { value: 'UK', label: 'Anh',          flag: '🇬🇧' },
+  { value: 'AU', label: 'Úc',           flag: '🇦🇺' },
+  { value: 'KR', label: 'Hàn Quốc',     flag: '🇰🇷' },
+  { value: 'TH', label: 'Thái Lan',     flag: '🇹🇭' },
+  { value: 'ID', label: 'Indonesia',    flag: '🇮🇩' },
+  { value: 'MY', label: 'Malaysia',     flag: '🇲🇾' },
+  { value: 'SG', label: 'Singapore',    flag: '🇸🇬' },
+  { value: 'BR', label: 'Brazil',       flag: '🇧🇷' },
+  { value: 'MX', label: 'Mexico',       flag: '🇲🇽' },
+  { value: 'OTHER', label: 'Khác',    flag: '🌍' },
+];
+
+function countryLabel(code: string | null | undefined): string {
+  if (!code) return '—';
+  const c = COUNTRY_OPTIONS.find(o => o.value === code);
+  return c ? `${c.flag} ${c.value}` : code;
+}
+
 function fmt(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
@@ -252,7 +276,7 @@ function CredCell({ value, masked = true }: { value: string | undefined; masked?
   if (!value) return <span className="text-text-muted text-[0.72rem]">—</span>;
   return (
     <span className="flex items-center gap-1 min-w-0">
-      <span className="font-mono text-[0.72rem] truncate max-w-[130px]" style={{ color: '#e2e8f0' }}>
+      <span className="font-mono text-[0.82rem] truncate max-w-[140px]" style={{ color: '#e2e8f0' }}>
         {(masked && !show) ? '••••••••' : value}
       </span>
       {masked && (
@@ -306,13 +330,13 @@ function ChannelRow({ ch, vaultKey, onSelectChannel, onDelete }: {
     >
       {/* Trạng thái */}
       <td className="px-2 py-2 whitespace-nowrap">
-        <span className="rounded-md px-1.5 py-0.5 text-[0.72rem] font-semibold"
+        <span className="rounded-md px-1.5 py-0.5 text-[0.8rem] font-semibold"
           style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
       </td>
       {/* Tên kênh */}
       <td className="px-2 py-2 whitespace-nowrap">
-        <div className="font-semibold text-[0.82rem]">{ch.channelName}</div>
-        <div className="text-[0.72rem] text-text-muted">@{ch.username}</div>
+        <div className="font-semibold text-[0.9rem]">{ch.channelName}</div>
+        <div className="text-[0.8rem] text-text-muted">@{ch.username}</div>
       </td>
       {/* Link kênh */}
       <td className="px-2 py-2 whitespace-nowrap">
@@ -322,12 +346,19 @@ function ChannelRow({ ch, vaultKey, onSelectChannel, onDelete }: {
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors text-[0.75rem] font-mono"
+              className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors text-[0.82rem] font-mono"
               title={ch.channelUrl}
             >
               🔗 <span className="max-w-[110px] truncate">{ch.channelUrl.replace('https://www.tiktok.com/@','@').replace('https://tiktok.com/@','@')}</span>
             </a>
-          : <span className="text-text-muted text-[0.72rem]">—</span>
+          : <span className="text-text-muted text-[0.82rem]">—</span>
+        }
+      </td>
+      {/* Danh mục Country */}
+      <td className="px-2 py-2 whitespace-nowrap text-[0.82rem]">
+        {ch.regionCountry
+          ? <span title={COUNTRY_OPTIONS.find(c => c.value === ch.regionCountry)?.label}>{countryLabel(ch.regionCountry)}</span>
+          : <span className="text-text-muted">—</span>
         }
       </td>
       {/* Mật khẩu TikTok */}
@@ -341,7 +372,7 @@ function ChannelRow({ ch, vaultKey, onSelectChannel, onDelete }: {
       {/* Email phụ */}
       <td className="px-2 py-2"><CredCell value={creds?.secondaryEmail} masked={false} /></td>
       {/* Ghi chú */}
-      <td className="px-2 py-2 text-text-muted text-[0.75rem] max-w-[140px] truncate" title={ch.notes ?? ''}>
+      <td className="px-2 py-2 text-text-muted text-[0.82rem] max-w-[150px] truncate" title={ch.notes ?? ''}>
         {ch.notes || '—'}
       </td>
       {/* Thao tác */}
@@ -374,6 +405,7 @@ function AddChannelModal({ onClose, onSave, vaultKey }: AddModalProps) {
   const [channelUrl,     setChannelUrl]     = useState('');
   const [niche,          setNiche]          = useState('');
   const [language,       setLanguage]       = useState<'ja'|'ko'|'en'|'vi'|'other'>('ja');
+  const [country,        setCountry]        = useState('');
   const [status,         setStatus]         = useState<TiktokChannelStatus>('active');
   const [followers,      setFollowers]      = useState('');
   const [notes,          setNotes]          = useState('');
@@ -402,6 +434,7 @@ function AddChannelModal({ onClose, onSave, vaultKey }: AddModalProps) {
         channelUrl: channelUrl.trim() || `https://www.tiktok.com/@${cleanUsername}`,
         uuid: uuid.trim() || null,
         niche: niche || null, language, status,
+          regionCountry: country || null,
         followersCount: parseInt(followers) || 0,
         followingCount: 0, videosCount: 0, totalLikes: 0, avgViews: 0,
         targetKeywords: [], tags: [], isMonetized: false, isCreatorFund: false,
@@ -472,7 +505,7 @@ function AddChannelModal({ onClose, onSave, vaultKey }: AddModalProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <div>
               <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Niche</label>
               <input className="field-input" value={niche} onChange={e => setNiche(e.target.value)} placeholder="Fishing, Travel…" />
@@ -488,7 +521,16 @@ function AddChannelModal({ onClose, onSave, vaultKey }: AddModalProps) {
               </select>
             </div>
             <div>
-              <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Status</label>
+              <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Country</label>
+              <select className="field-select" value={country} onChange={e => setCountry(e.target.value)}>
+                <option value="">— Chọn country</option>
+                {COUNTRY_OPTIONS.map(c => (
+                  <option key={c.value} value={c.value}>{c.flag} {c.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[0.82rem] font-semibold mb-1.5 text-text-secondary">Trạng thái</label>
               <select className="field-select" value={status} onChange={e => setStatus(e.target.value as TiktokChannelStatus)}>
                 {Object.entries(STATUS_BADGE).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
@@ -578,6 +620,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
   const [search,       setSearch]       = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterLang,   setFilterLang]   = useState('');
+  const [filterCountry, setFilterCountry] = useState('');
   const [showAdd,      setShowAdd]      = useState(false);
   const [showPaste,    setShowPaste]    = useState(false);
 
@@ -585,6 +628,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
     channels.filter(ch => {
       if (filterStatus && ch.status !== filterStatus) return false;
       if (filterLang   && ch.language !== filterLang) return false;
+      if (filterCountry && ch.regionCountry !== filterCountry) return false;
       if (search) {
         const q = search.toLowerCase();
         return ch.channelName.toLowerCase().includes(q)
@@ -621,7 +665,7 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
   if (vaultState === 'first_time' && userId) return <div className="px-4 py-6"><MasterPasswordSetup userId={userId} onSetup={setup} /></div>;
   if (vaultState === 'locked' && userId) return <div className="px-4 py-6"><MasterPasswordPrompt userId={userId} failedAttempts={failedAttempts} onUnlock={unlock} /></div>;
 
-  const HEADERS = ['Trạng thái','Tên kênh','Link kênh','Mật khẩu TikTok','Email','Mật khẩu email','Token/Cookie','Email phụ','Ghi chú','Thao tác'];
+  const HEADERS = ['Trạng thái','Tên kênh','Link kênh','Country','Mật khẩu TikTok','Email','Mật khẩu email','Token/Cookie','Email phụ','Ghi chú','Thao tác'];
 
   return (
     <div className="flex flex-col gap-3">
@@ -652,6 +696,11 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
           <option value="">Tất cả trạng thái</option>
           {Object.entries(STATUS_BADGE).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
+        <select value={filterCountry} onChange={e => setFilterCountry(e.target.value)}
+          className="field-select" style={{ minWidth: 120, width: 'auto' }}>
+          <option value="">Tất cả country</option>
+          {COUNTRY_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.flag} {c.label}</option>)}
+        </select>
         <select value={filterLang} onChange={e => setFilterLang(e.target.value)}
           className="field-select" style={{ minWidth: 120, width: 'auto' }}>
           <option value="">Tất cả ngôn ngữ</option>
@@ -678,11 +727,11 @@ export default function TiktokChannelsTab({ userId, workspaceId, masterPw, tikto
 
       {!loading && filtered.length > 0 && (
         <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
-          <table className="w-full border-collapse text-[0.82rem]">
+          <table className="w-full border-collapse text-[0.9rem]">
             <thead>
               <tr style={{ background: 'rgba(15,23,50,0.9)', borderBottom: '2px solid rgba(255,255,255,0.08)' }}>
                 {HEADERS.map(h => (
-                  <th key={h} className="px-2 py-2.5 font-semibold text-text-muted whitespace-nowrap text-left text-[0.75rem] uppercase tracking-wide">{h}</th>
+                  <th key={h} className="px-2 py-2.5 font-semibold text-text-muted whitespace-nowrap text-left text-[0.82rem] uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>

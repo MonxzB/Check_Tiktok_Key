@@ -218,7 +218,7 @@ export default function TiktokChannelDetailModal({ channel, vaultKey, userId, ti
                   defaultValue={ch.targetKeywords.join('\n')} rows={5}
                   onBlur={e => handleSave({ targetKeywords: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[0.82rem] font-semibold mb-1.5">Ngôn ngữ</label>
                   <select className="w-full box-border" value={ch.language ?? ''} onChange={e => handleSave({ language: (e.target.value || null) as typeof ch.language })}>
@@ -228,6 +228,26 @@ export default function TiktokChannelDetailModal({ channel, vaultKey, userId, ti
                     <option value="en">🇺🇸 English</option>
                     <option value="vi">🇻🇳 Vietnamese</option>
                     <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[0.82rem] font-semibold mb-1.5">Country</label>
+                  <select className="w-full box-border" value={ch.regionCountry ?? ''} onChange={e => handleSave({ regionCountry: e.target.value || null })}>
+                    <option value="">— Chọn —</option>
+                    <option value="VN">🇻🇳 Việt Nam</option>
+                    <option value="JP">🇯🇵 Nhật Bản</option>
+                    <option value="PH">🇵🇭 Philippines</option>
+                    <option value="US">🇺🇸 Hoa Kỳ</option>
+                    <option value="UK">🇬🇧 Anh</option>
+                    <option value="AU">🇦🇺 Úc</option>
+                    <option value="KR">🇰🇷 Hàn Quốc</option>
+                    <option value="TH">🇹🇭 Thái Lan</option>
+                    <option value="ID">🇮🇩 Indonesia</option>
+                    <option value="MY">🇲🇾 Malaysia</option>
+                    <option value="SG">🇸🇬 Singapore</option>
+                    <option value="BR">🇧🇷 Brazil</option>
+                    <option value="MX">🇲🇽 Mexico</option>
+                    <option value="OTHER">🌍 Khác</option>
                   </select>
                 </div>
                 <div>
